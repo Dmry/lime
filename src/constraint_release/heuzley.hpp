@@ -6,8 +6,8 @@
  *      Journal of Applied Polymer Science 2004
  */
 
-#include "utilities.hpp"
-#include "Iconstraint_release.hpp"
+#include "../utilities.hpp"
+#include "constraint_release.hpp"
 
 #include <vector>
 #include <variant>

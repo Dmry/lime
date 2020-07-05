@@ -1,11 +1,15 @@
+add_subdirectory(constraint_release)
+
 include_directories(${ics_SOURCE_DIR}/inc)
 include_directories( ${Boost_INCLUDE_DIR} )
 include_directories( ${Eigen3_INCLUDE_DIR} )
+
 link_directories(${ics_SOURCE_DIR}/src)
 
 file(GLOB src "*.cpp" )
+file(GLOB cr_src "constraint_release/*.cpp" )
 
-add_executable(ics ${src})
+add_executable(ics ${src} ${cr_src})
 
 find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)

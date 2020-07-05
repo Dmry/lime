@@ -1,8 +1,8 @@
 #include <boost/math/quadrature/exp_sinh.hpp>
 
-#include "HEU_constraint_release.hpp"
-#include "parallel_policy.hpp"
-#include "ics_log_utils.hpp"
+#include "heuzley.hpp"
+#include "../parallel_policy.hpp"
+#include "../ics_log_utils.hpp"
 
 #include <algorithm>
 #include <cmath>

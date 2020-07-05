@@ -3,8 +3,8 @@
 #include "context.hpp"
 #include "tube.hpp"
 #include "contour_length_fluctuations.hpp"
-#include "HEU_constraint_release.hpp"
-#include "Iconstraint_release.hpp"
+#include "constraint_release/heuzley.hpp"
+#include "constraint_release/constraint_release.hpp"
 
 #include <memory>
 #include <vector>

@@ -1,10 +1,11 @@
-#include "LM_constraint_release.hpp"
-#include "parallel_policy.hpp"
-#include "ics_log_utils.hpp"
-
 #include <boost/math/quadrature/exp_sinh.hpp>
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/differentiation/finite_difference.hpp>
+
+#include "../parallel_policy.hpp"
+#include "../ics_log_utils.hpp"
+
+#include "likhtmanmcleish.hpp"
 
 #include <functional>
 #include <memory>
@@ -53,8 +54,6 @@ LM_constraint_release::generate(double Gf_norm, double tau_df, double tau_e, dou
 
     // minimize function depending on the random input
     auto minimize_functor = [&] (const double& rand_) {
-
-        using namespace std;  // Help ADL of std functions.
         using namespace boost::math::tools; // For bracket_and_solve_root.
 
         auto f = [&](double epsilon_){return cp(Gf_norm, tau_df, tau_e, p_star, e_star, Z, epsilon_) -  rand_;};

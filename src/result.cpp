@@ -2,7 +2,7 @@
 #include "longitudinal_motion.hpp"
 #include "rouse_motion.hpp"
 #include "contour_length_fluctuations.hpp"
-#include "HEU_constraint_release.hpp"
+#include "constraint_release/heuzley.hpp"
 #include "utilities.hpp"
 #include "parallel_policy.hpp"
 

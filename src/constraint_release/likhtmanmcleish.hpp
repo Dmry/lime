@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utilities.hpp"
+#include "../utilities.hpp"
 
 #include <random>
 #include <stdexcept>
