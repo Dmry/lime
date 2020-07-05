@@ -20,7 +20,7 @@ struct Fit
   	{
 		const std::vector<double>* fitting_data_points;
 		std::tuple<T&...>* free_variables; 
-		Result* driver;
+		ICS_result* driver;
 	};
 
 	using Target_func = int(*)(const gsl_vector*, void*, gsl_vector*);
@@ -94,7 +94,7 @@ struct Fit
     };
 
 	int
-	fit(const std::vector<double>& fitting_data, Result& driver, double wt_pow = 1.2)
+	fit(const std::vector<double>& fitting_data, ICS_result& driver, double wt_pow = 1.2)
 	{
 		// vector that holds guessed g(t) for each iteration
 		gsl_vector *f;

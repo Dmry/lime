@@ -2,7 +2,6 @@
 
 #include "context.hpp"
 #include "tube.hpp"
-#include "system.hpp"
 #include "contour_length_fluctuations.hpp"
 #include "HEU_constraint_release.hpp"
 #include "Iconstraint_release.hpp"
@@ -18,21 +17,21 @@ class IResult
 
     protected:
         Time_range::type time_range_;
-        std::vector<double> result_buffer;
+        std::vector<double> result_buffer_;
 };
 
 class ICS_result : public IResult
 {
     public:
-        ICS_result(Time_range::type time_range, ICS_context_builder* builder);
+        ICS_result(Time_range::type time_range, IContext_builder* builder);
 
         std::vector<double> result() override;
 
-        double c_v;
+        void set_c_v(double);
 
-    private:
         std::shared_ptr<Context> context_;
 
+    private:
         std::unique_ptr<Contour_length_fluctuations> CLF;
         std::unique_ptr<IConstraint_release> CR;
 };

@@ -5,6 +5,7 @@
 
 #include "context.hpp"
 #include "utilities.hpp"
+#include "tube.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -75,4 +76,54 @@ void Context::print()
                 info_or_warn(boost::fusion::extension::struct_member_name<Context,index>::call(), boost::fusion::at_c<index>(*this));
             }
     );
+}
+
+IContext_builder::IContext_builder()
+:   context_{std::make_shared<Context>()}
+{}
+
+IContext_builder::IContext_builder(std::shared_ptr<Context> context)
+:   context_{context}
+{}
+
+void
+IContext_builder::set_context(std::shared_ptr<Context> context)
+{
+    context_ = context;
+}
+
+std::shared_ptr<Context>
+IContext_builder::get_context()
+{
+    return context_;
+}
+
+ICS_context_builder::ICS_context_builder(std::shared_ptr<struct System> system)
+:   IContext_builder{}, system_{system}
+{}
+
+ICS_context_builder::ICS_context_builder(std::shared_ptr<struct System> system, std::shared_ptr<Context> context)
+:   IContext_builder{context}, system_{system}
+{}
+
+void
+ICS_context_builder::gather_physics()
+{
+    // Tube-related physics
+    context_->add_physics_in_place<Z_from_length>();
+    context_->add_physics_in_place<M_e_from_N_e>();
+    context_->add_physics_in_place<G_f_normed>();
+
+    // System-related physics
+    context_->add_physics_in_place<Tau_e_alt>(system_);
+    context_->add_physics_in_place<Tau_r>(system_);
+    context_->add_physics_in_place<Tau_d_0>(system_);
+    context_->add_physics_in_place<Tau_df>(system_);
+    context_->add_physics_in_place<G_e>(system_);
+}
+
+void
+ICS_context_builder::attach_computes(std::vector<Compute*> computes)
+{
+    context_->attach_compute(computes);
 }

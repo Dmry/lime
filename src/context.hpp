@@ -2,6 +2,8 @@
 
 #include <boost/fusion/adapted/struct.hpp>
 
+#include "utilities.hpp"
+
 #include <vector>
 #include <memory>
 
@@ -69,8 +71,8 @@ struct Compute {
 class IContext_builder
 {
     public:
-        Context_builder();
-        Context_builder(std::shared_ptr<Context>);
+        IContext_builder();
+        IContext_builder(std::shared_ptr<Context>);
 
         virtual void gather_physics() = 0;
 
@@ -86,11 +88,13 @@ class IContext_builder
 class ICS_context_builder : public IContext_builder
 {
     public:
-        ICS_context_builder(std::shared_ptr<System> sys);
-        ICS_context_builder(std::shared_ptr<System> sys, std::shared_ptr<Context>);
+        ICS_context_builder(std::shared_ptr<struct System> sys);
+        ICS_context_builder(std::shared_ptr<struct System> sys, std::shared_ptr<Context>);
 
         virtual void gather_physics() override;
 
         virtual void attach_computes(std::vector<Compute*> computes) override;
-
-}
+    
+    protected:
+        std::shared_ptr<System> system_;
+};
