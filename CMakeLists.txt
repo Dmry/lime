@@ -7,8 +7,7 @@ set (CMAKE_CXX_STANDARD_REQUIRED on)
 find_package(TBB)
 find_package(Threads)
 find_package(GSL REQUIRED)
-find_package(Boost REQUIRED)
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(Boost COMPONENTS log log_setup REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -17,6 +16,8 @@ endif()
 if(THREADS_FOUND AND TBB_FOUND)
   add_definitions(-DRUN_PARALLEL)
 endif()
+
+add_definitions(-DBOOST_LOG_DYN_LINK)
 
 set(CMAKE_CXX_FLAGS "-g -O3 -march=native -pipe -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -march=native -pipe -Wall -Wextra")
