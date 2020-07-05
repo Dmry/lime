@@ -5,11 +5,11 @@
 
 #include "parse.hpp"
 #include "ics_log_utils.hpp"
-#include "fit.hpp"
 #include "result.hpp"
 #include "parallel_policy.hpp"
 #include "writer.hpp"
 #include "utilities.hpp"
+#include "fit.hpp"
 
 #include <filesystem>
 #include <algorithm>
@@ -152,18 +152,21 @@ struct fit : ics::command<fit>, result_cmd
         file_contents.buffer.clear();
 
         std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
-
         ICS_result driver(time, builder.get());
 
-        //  sigmoid_wrapper<double> cv_wrapper = driver.CR.c_v;
-        Fit<double, double/*, double, sigmoid_wrapper<double> */> fit(driver.context_->N_e,  /* driver.sys.G_e, */ driver.context_->tau_monomer/* , cv_wrapper */);
+        driver.get_cv() = c_v;
+
+        sigmoid_wrapper<double> cv_wrapper = driver.get_cv();
+        Fit<double, double, sigmoid_wrapper<double>> fit(driver.context_->N_e, driver.context_->tau_monomer, cv_wrapper);
 
         fit.fit(g_t, driver, wt_pow);
 
-        driver.context_->print();
-
         auto res = driver.result();
 
+        driver.context_->print();
+
+        BOOST_LOG_TRIVIAL(info) << "cv: " << driver.get_cv();
+        
         Vector_writer<dat> writer;
 
         if (not outpath.empty())

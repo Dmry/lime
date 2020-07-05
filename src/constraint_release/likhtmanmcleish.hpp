@@ -10,7 +10,7 @@
 struct LM_constraint_release : public IConstraint_release
 {
   public:
-    LM_constraint_release(double c_v_, Time_range::type time_range_, size_t realizations_);
+    LM_constraint_release(Time_range::type time_range_, double c_v_, size_t realizations_);
     void calculate(double Gf_norm, double tau_df, double tau_e, double Z);
 
   private:

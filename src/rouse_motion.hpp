@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/phoenix/function/adapt_function.hpp>
+
 #include "context.hpp"
 #include "utilities.hpp"
 

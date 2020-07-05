@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <any>
+#include <ostream>
 
 static constexpr double pi = 3.14159265359;
 static constexpr double gas_constant = 1; // m^2 kg s^-2 K^-1 mol^-1
@@ -66,15 +67,26 @@ struct sigmoid_wrapper
     operator T&() { return value; }
     operator T() const { return value; }
 
-    T operator =(T value_) {return value = sigmoid(value_);}
-    T operator =(T value_) const {return value = sigmoid(value_);}
+    template<typename Y>
+    friend std::ostream& operator<< (std::ostream &out, const sigmoid_wrapper<Y>& sigmoid);
+
+    T operator =(T value_) {return sigmoid(value_);}
+    T operator =(T value_) const {return sigmoid(value_);}
 
     double
     sigmoid(double in)
     {
-        return 1/(1+std::abs(in));
+        return value = 1/(1+std::abs(in));
     }
 };
+
+template<typename T>
+std::ostream& operator<< (std::ostream &out, const sigmoid_wrapper<T>& sigmoid)
+{
+    out << sigmoid.value;
+ 
+    return out;
+}
 
 template<typename T>
 T

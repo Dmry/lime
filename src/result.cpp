@@ -2,16 +2,11 @@
 #include "longitudinal_motion.hpp"
 #include "rouse_motion.hpp"
 #include "contour_length_fluctuations.hpp"
-#include "constraint_release/heuzley.hpp"
+#include "constraint_release/likhtmanmcleish.hpp"
 #include "utilities.hpp"
 #include "parallel_policy.hpp"
 
 #include <algorithm>
-
-//////////////////////////////////////////////
-////////////////////TODO//////////////////////
-// Set c_v correctly in both result and CR ///
-//////////////////////////////////////////////
 
 IResult::IResult(Time_range::type time_range)
 :   time_range_{time_range},
@@ -31,6 +26,12 @@ ICS_result::ICS_result(Time_range::type time_range, IContext_builder* builder)
     context_ = builder->get_context();
 }
 
+double&
+ICS_result::get_cv()
+{
+    return CR->c_v_;
+}
+
 std::vector<double>
 ICS_result::result()
 {
@@ -43,7 +44,7 @@ ICS_result::result()
     Rouse_motion RM{context_->Z, context_->tau_r, context_->N};
 
     std::transform(exec_policy, CLF->begin(), CLF->end(), CR->begin(), result_buffer_.begin(),
-        [](const double& mu_t, const double& r_t){ return 4.0/5.0 * mu_t * mu_t /*r_t*/;}
+        [](const double& mu_t, const double& r_t){ return 4.0/5.0 * mu_t * r_t;}
     );
 
     std::transform(exec_policy, time_range_->begin(), time_range_->end(), result_buffer_.begin(), result_buffer_.begin(),
@@ -51,10 +52,4 @@ ICS_result::result()
     );
 
     return result_buffer_;
-}
-
-void
-ICS_result::set_c_v(double c_v)
-{
-    CR->c_v_ = c_v;
 }

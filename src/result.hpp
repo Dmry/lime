@@ -3,7 +3,7 @@
 #include "context.hpp"
 #include "tube.hpp"
 #include "contour_length_fluctuations.hpp"
-#include "constraint_release/heuzley.hpp"
+#include "constraint_release/heuzey.hpp"
 #include "constraint_release/constraint_release.hpp"
 
 #include <memory>
@@ -27,11 +27,11 @@ class ICS_result : public IResult
 
         std::vector<double> result() override;
 
-        void set_c_v(double);
+        double& get_cv();
 
         std::shared_ptr<Context> context_;
 
-    private:
+    protected:
         std::unique_ptr<Contour_length_fluctuations> CLF;
         std::unique_ptr<IConstraint_release> CR;
 };

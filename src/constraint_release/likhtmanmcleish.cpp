@@ -14,7 +14,7 @@
 #include <cmath>
 #include <utility>
 
-LM_constraint_release::LM_constraint_release(double c_v, Time_range::type time_range, size_t realizations) : IConstraint_release{time_range, c_v}, realizations_{realizations}, km(), prng{std::random_device{}()}, dist(0, 1)
+LM_constraint_release::LM_constraint_release(Time_range::type time_range, double c_v, size_t realizations) : IConstraint_release{time_range, c_v}, realizations_{realizations}, km(), prng{std::random_device{}()}, dist(0, 1)
 {}
 
 auto

@@ -20,6 +20,7 @@ namespace constraint_release
 struct IModel
 {
     IModel(const double Z_, const double tau_e_, const double tau_df_);
+    virtual double operator() (double epsilon) const = 0;
 
   protected:
 
@@ -35,7 +36,7 @@ struct IModel
 struct Short : public IModel
 {
     Short(const double Z_, const double tau_e_, const double tau_df_);
-    double operator () (double epsilon) const;
+    virtual double operator () (double epsilon) const override;
 
   protected:
     
@@ -48,7 +49,7 @@ struct Medium : public Short
 {
     Medium(const double Z_, const double tau_e_, const double tau_df_);
 
-    double operator () (double epsilon) const;
+    virtual double operator () (double epsilon) const override;
 
   protected:
 
@@ -69,7 +70,7 @@ struct Long : public Medium
 
     Long(const double Z_, const double tau_e_, const double tau_df_);
 
-    double operator () (double epsilon) const;
+    virtual double operator () (double epsilon) const override;
 
   protected:
 
@@ -85,27 +86,21 @@ struct Extra_long : public Long
 
 struct HEU_constraint_release : public IConstraint_release
 {
-    using Model = std::variant<std::monostate,
-                               constraint_release::Short,
-                               constraint_release::Medium,
-                               constraint_release::Long,
-                               constraint_release::Extra_long>;
-
     struct userdata {
-        Model model;
+        std::unique_ptr<constraint_release::IModel> model;
         double t;
     };
 
   protected:
 
     double epsilon_0;
-    Model model;
+    std::unique_ptr<constraint_release::IModel> model;
 
   public:
 
     HEU_constraint_release(Time_range::type time_range, double c_v);
 
-    auto R_t_functional(double Z, double tau_e, double tau_df);
+    auto R_t_functional(double Z, double tau_e);
     void update(const Context& ctx) override;
 
   private:
