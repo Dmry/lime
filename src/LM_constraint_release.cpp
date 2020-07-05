@@ -98,12 +98,9 @@ LM_constraint_release::Me(double epsilon)
 
         if (count > 0)
         {
-     //       std::cout << static_cast<double>(count) << std::endl;
             sum += static_cast<double>(count) /* / static_cast<double>(Si.size()) */;
         }
     }
-
- //   std::cout << sum / static_cast<double>(realizations) << std::endl;
 
     return sum / static_cast<double>(realizations);
 }
@@ -133,7 +130,7 @@ LM_constraint_release::integral_result(double t)
     catch (const std::exception& ex)
     {
         ep = std::current_exception();
-        ICS_LOG(debug, "In CR: " + std::string(ex.what()));
+        BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
     }
 
     return res;

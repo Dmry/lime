@@ -212,7 +212,7 @@ HEU_constraint_release::integral_result(double lower_bound, double t)
     catch (const std::exception& ex)
     {
         ep = std::current_exception();
-        ICS_LOG(debug, "In CR: " + std::string(ex.what()));
+        BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
     }
 
     return res;

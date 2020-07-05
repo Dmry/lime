@@ -1,10 +1,12 @@
+#include <boost/log/utility/setup/console.hpp>
+#define BOOST_LOG_DYN_LINK 1
+
 #include "../inc/args.hpp"
 
 #include "parse.hpp"
 #include "ics_log_utils.hpp"
 #include "fit.hpp"
 #include "result.hpp"
-#include "system.hpp"
 #include "parallel_policy.hpp"
 #include "writer.hpp"
 #include "utilities.hpp"
@@ -33,7 +35,7 @@ struct ics : args::group<ics>
     void parse(F f)
     {
         auto debug = [](auto&&, const auto&, const args::argument&) {
-            spdlog::get("console")->set_level(spdlog::level::debug);
+            boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
         };
 
         f(nullptr,  "-v", "--version", args::help("Print version"),    args::show("0.0.1")         );
@@ -93,17 +95,15 @@ struct generate : ics::command<generate>, result_cmd
 
     void run()
     {
-        ICS_LOG(info, "Generating..");
+        BOOST_LOG_TRIVIAL(info) << "Generating..";
 
         Time_range::type time = Time_range::construct(log_with_base::calculate(base, t));
 
         std::generate(time->begin(), time->end(), [n=0, this] () mutable {auto x = std::pow(base, n++); while(x < t) return x;});
 
-        std::unique_ptr<Result_builder> builder = std::make_unique<Default_result_builder>(system, time, c_v);
-        builder->set_context(ctx);
+        std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
 
-        Result driver;
-        driver.auto_configure(builder.get());
+        ICS_result driver(time, builder.get());
         driver.context_->apply_physics();
         driver.context_->print();
 
@@ -142,20 +142,18 @@ struct fit : ics::command<fit>, result_cmd
     void run()
     {
         std::vector<double> g_t;
-        Time_range::type t;
+        Time_range::type time;
 
         auto file_contents = parse_file<ics_file_format, clear_comments, store_headers>(inpath);
 
         g_t = Get<double>::col(file_col, file_contents.out);
-        t = Time_range::convert(Get<double>::col(0, file_contents.out));
+        time = Time_range::convert(Get<double>::col(0, file_contents.out));
 
         file_contents.buffer.clear();
 
-        std::unique_ptr<Result_builder> builder = std::make_unique<Default_result_builder>(system, t, c_v);
-        builder->set_context(ctx);
+        std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
 
-        Result driver;
-        driver.auto_configure(builder.get());
+        ICS_result driver(time, builder.get());
 
         //  sigmoid_wrapper<double> cv_wrapper = driver.CR.c_v;
         Fit<double, double/*, double, sigmoid_wrapper<double> */> fit(driver.context_->N_e,  /* driver.sys.G_e, */ driver.context_->tau_monomer/* , cv_wrapper */);
@@ -171,21 +169,22 @@ struct fit : ics::command<fit>, result_cmd
         if (not outpath.empty())
             writer.path = outpath;
 
-        writer.write(*t, res);
+        writer.write(*time, res);
     }
 };
 
 void ics_terminate() {
-    spdlog::get("console")->error("Unhandled exception");
+    BOOST_LOG_TRIVIAL(error) << "Unhandled exception";
     std::rethrow_exception(std::current_exception());
 //  abort();  // forces abnormal termination
 }
 
 int main(int argc, char const *argv[])
 {
-    auto console = spdlog::stdout_color_mt("console");    
-    auto err_logger = spdlog::stderr_color_mt("stderr");
-    spdlog::set_pattern("[%H:%M:%S] [%^%l%$] %v");  
+    namespace log = boost::log;
+    log::add_console_log(std::cout, log::keywords::format = ics_log::coloring_formatter);
+    log::core::get()->set_filter(log::trivial::severity >= log::trivial::info);
+
     std::set_terminate (ics_terminate);
 
     try
@@ -194,7 +193,7 @@ int main(int argc, char const *argv[])
     }
     catch (const std::runtime_error& err)
     {
-        spdlog::get("console")->error("{}", err.what());
+        BOOST_LOG_TRIVIAL(error) << err.what();
         exit(1);
     }
 

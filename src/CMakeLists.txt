@@ -15,4 +15,4 @@ if(CMAKE_THREAD_LIBS_INIT)
   target_link_libraries(ics "${CMAKE_THREAD_LIBS_INIT}")
 endif()
 
-target_link_libraries(ics -lm tbb ${Boost_LIBRARIES} Eigen3::Eigen GSL::gsl stdc++)
+target_link_libraries(ics -lm tbb ${Boost_LIBRARIES} Boost::boost GSL::gsl stdc++)

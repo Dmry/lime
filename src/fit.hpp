@@ -66,7 +66,7 @@ struct Fit
 			
 			out << ", |f(x)| = " << gsl_blas_dnrm2(f);
 
-			ICS_LOG(info, out.str());
+			BOOST_LOG_TRIVIAL(info) << out.str();
 		}
 	}
 
@@ -164,15 +164,15 @@ struct Fit
 
 		if (status == GSL_SUCCESS)
 		{
-			ICS_LOG(info, "Fit converged.");
+			BOOST_LOG_TRIVIAL(info) << "Fit converged.";
 		}
 		else if (status == GSL_EMAXITER)
 		{
-			ICS_LOG(error, "Max iterations reached before converging.");
+			BOOST_LOG_TRIVIAL(error) << "Max iterations reached before converging.";
 		}
 		else if (status == GSL_ENOPROG)
 		{
-			ICS_LOG(error, "Convergence too slow, exiting.");
+			BOOST_LOG_TRIVIAL(error) << "Convergence too slow, exiting.";
 		}
 		return 0;
 	}

@@ -108,11 +108,11 @@ info_or_warn(const std::string& description, T var)
 {
     if (var < 0 or var != var)
     {
-    ICS_LOG(warn, description + ": " + std::to_string(var));
+        BOOST_LOG_TRIVIAL(warning) << description << ": " << var;
     }
     else
     {
-    ICS_LOG(info, description + ": " + std::to_string(var));
+        BOOST_LOG_TRIVIAL(info) << description << ": " << var;
     }
 }
 
