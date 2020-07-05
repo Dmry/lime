@@ -2,6 +2,7 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/differentiation/finite_difference.hpp>
 
+#include "../utilities.hpp"
 #include "../parallel_policy.hpp"
 #include "../ics_log_utils.hpp"
 
@@ -10,9 +11,10 @@
 #include <functional>
 #include <memory>
 #include <algorithm>
+#include <cmath>
 #include <utility>
 
-LM_constraint_release::LM_constraint_release(double c_v_, Time_range::type time_range_, size_t realizations_) : R_t(time_range_->size()), time_range{time_range_}, c_v{c_v_}, realizations{realizations_}, km(), prng{std::random_device{}()}, dist(0, 1)
+LM_constraint_release::LM_constraint_release(double c_v, Time_range::type time_range, size_t realizations) : IConstraint_release{time_range, c_v}, realizations_{realizations}, km(), prng{std::random_device{}()}, dist(0, 1)
 {}
 
 auto
@@ -24,13 +26,15 @@ LM_constraint_release::R_t_functional()
 }
 
 void
-LM_constraint_release::calculate(double Gf_norm, double tau_df, double tau_e, double e_star, double Z)
+LM_constraint_release::calculate(double Gf_norm, double tau_df, double tau_e, double Z)
 {
-    km.resize(Z*realizations);
+    km.resize(Z*realizations_);
 
-    generate(Gf_norm, tau_df, tau_e, e_star, Z);
+    double E_star = e_star(Z, tau_e, Gf_norm);
 
-    std::transform(exec_policy, time_range->begin(), time_range->end(), R_t.begin(), R_t_functional());
+    generate(Gf_norm, tau_df, tau_e, E_star, Z);
+
+    std::transform(exec_policy, time_range_->begin(), time_range_->end(), R_t_.begin(), R_t_functional());
 
     if (ep)
     {
@@ -39,12 +43,28 @@ LM_constraint_release::calculate(double Gf_norm, double tau_df, double tau_e, do
 
 }
 
+double
+LM_constraint_release::e_star(double Z, double tau_e, double G_f_normed)
+{
+    Summation sum{1.0, std::sqrt(Z/10.0), 2.0};
+
+    constexpr auto f = [](const double& p) -> double {return 1.0/square(p);};
+
+    return 1.0/(tau_e*std::pow(Z,4.0)) * std::pow((4.0*0.306 / (1-G_f_normed*sum(f)) ),4.0);
+}
+
+void
+LM_constraint_release::update(const Context& ctx)
+{
+    calculate(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, ctx.Z);
+}
+
 void
 LM_constraint_release::generate(double Gf_norm, double tau_df, double tau_e, double e_star, double Z)
 {
     double p_star = std::sqrt(Z/10.0);
 
-    size_t size = static_cast<size_t>(Z*realizations);
+    size_t size = static_cast<size_t>(Z*realizations_);
 
     km.resize(size);
 
@@ -79,9 +99,9 @@ double
 LM_constraint_release::Me(double epsilon)
 {
     double sum{0.0};
-    size_t realization_size{km.size()/realizations};
+    size_t realization_size{km.size()/realizations_};
 
-    for (size_t j = 0 ; j < realizations ; ++j)
+    for (size_t j = 0 ; j < realizations_ ; ++j)
     {
         size_t strides = j * realization_size;
 
@@ -93,7 +113,7 @@ LM_constraint_release::Me(double epsilon)
         for (size_t i = 1+strides, s = 1 ; i < strides+Si.size() ; ++i, ++s)
             Si[s] = km[i] + km[i+1] - epsilon - square(km[i]) / Si[s-1];
 
-        auto count = std::count_if(std::execution::seq, Si.begin(), Si.end(), [](const double& si) {return si < 0;});
+        auto count = std::count_if(exec_policy, Si.begin(), Si.end(), [](const double& si) {return si < 0;});
 
         if (count > 0)
         {
@@ -101,7 +121,7 @@ LM_constraint_release::Me(double epsilon)
         }
     }
 
-    return sum / static_cast<double>(realizations);
+    return sum / static_cast<double>(realizations_);
 }
 
 double
@@ -111,7 +131,7 @@ LM_constraint_release::integral_result(double t)
 
     using namespace boost::math::differentiation;
     auto f = [this, t, me_wrapper] (double epsilon) -> double {
-        return  finite_difference_derivative<decltype(me_wrapper), double, 8>(me_wrapper, epsilon) * std::exp(-epsilon*c_v*t);
+        return  finite_difference_derivative<decltype(me_wrapper), double, 8>(me_wrapper, epsilon) * std::exp(-epsilon*c_v_*t);
      //   return Me(epsilon) * std::exp(-epsilon*c_v*t);
     };
 
