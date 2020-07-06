@@ -7,7 +7,7 @@
 
 struct IConstraint_release : public Time_series, public Compute
 {
-    IConstraint_release(Time_range::type time_range, double c_v)
+    IConstraint_release(Time_series::time_type time_range, double c_v)
     :   Time_series(time_range),
         c_v_{c_v}
     {};

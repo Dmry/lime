@@ -11,6 +11,7 @@
 #include <gsl/gsl_multifit_nlinear.h>
 
 #include "ics_log_utils.hpp"
+#include "time_series.hpp"
 #include "result.hpp"
 
 template <typename... T>
@@ -18,7 +19,7 @@ struct Fit
 {
 	struct User_data
   	{
-		const std::vector<double>* fitting_data_points;
+		const Time_series::value_type* fitting_data_points;
 		std::tuple<T&...>* free_variables; 
 		ICS_result* driver;
 	};
@@ -94,7 +95,7 @@ struct Fit
     };
 
 	int
-	fit(const std::vector<double>& fitting_data, ICS_result& driver, double wt_pow = 1.2)
+	fit(const Time_series::value_type& fitting_data, ICS_result& driver, double wt_pow = 1.2)
 	{
 		// vector that holds guessed g(t) for each iteration
 		gsl_vector *f;

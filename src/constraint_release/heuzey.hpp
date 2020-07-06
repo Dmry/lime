@@ -98,7 +98,7 @@ struct HEU_constraint_release : public IConstraint_release
 
   public:
 
-    HEU_constraint_release(Time_range::type time_range, double c_v);
+    HEU_constraint_release(Time_series::time_type time_range, double c_v);
 
     auto R_t_functional(double Z, double tau_e);
     void update(const Context& ctx) override;

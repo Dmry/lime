@@ -141,7 +141,7 @@ Extra_long::Extra_long(const double Z_, const double tau_e_, const double tau_df
     n = 0.393;
 }
 
-HEU_constraint_release::HEU_constraint_release(Time_range::type time_range, double c_v)
+HEU_constraint_release::HEU_constraint_release(Time_series::time_type time_range, double c_v)
 : IConstraint_release{time_range, c_v}
 {}
 

@@ -141,12 +141,12 @@ struct fit : ics::command<fit>, result_cmd
 
     void run()
     {
-        std::vector<double> g_t;
-        Time_range::type time;
+        Time_series::value_type g_t;
+        Time_series::time_type time;
 
         auto file_contents = parse_file<ics_file_format, clear_comments, store_headers>(inpath);
 
-        g_t = Get<double>::col(file_col, file_contents.out);
+        g_t = Get<Time_series::value_primitive>::col(file_col, file_contents.out);
         time = Time_range::convert(Get<double>::col(0, file_contents.out));
 
         file_contents.buffer.clear();

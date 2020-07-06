@@ -11,7 +11,7 @@
 #include <cmath>
 #include <limits>
 
-Contour_length_fluctuations::Contour_length_fluctuations(Time_range::type time_range_)
+Contour_length_fluctuations::Contour_length_fluctuations(Time_series::time_type time_range_)
 : Time_series(time_range_), sum{1.0, 0.0, 2.0}
 {}
 

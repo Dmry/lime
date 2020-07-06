@@ -15,15 +15,15 @@
 class IResult : public Time_series
 {
     public:
-        IResult(Time_range::type time_range);
-        virtual std::vector<double> result() = 0;
+        IResult(Time_series::time_type time_range);
+        virtual Time_series::value_type result() = 0;
 };
 
 struct ICS_result : public IResult
 {
-    ICS_result(Time_range::type time_range, IContext_builder* builder);
+    ICS_result(Time_series::time_type time_range, IContext_builder* builder);
 
-    std::vector<double> result() override;
+    Time_series::value_type result() override;
 
     std::shared_ptr<Context> context_;
     std::unique_ptr<Contour_length_fluctuations> CLF;

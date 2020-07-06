@@ -8,11 +8,11 @@
 
 #include <algorithm>
 
-IResult::IResult(Time_range::type time_range)
+IResult::IResult(Time_series::time_type time_range)
 :   Time_series{time_range}
 {}
 
-ICS_result::ICS_result(Time_range::type time_range, IContext_builder* builder)
+ICS_result::ICS_result(Time_series::time_type time_range, IContext_builder* builder)
 :   IResult(time_range)
 {
     // Build context
@@ -25,7 +25,7 @@ ICS_result::ICS_result(Time_range::type time_range, IContext_builder* builder)
     context_ = builder->get_context();
 }
 
-std::vector<double>
+Time_series::value_type
 ICS_result::result()
 {
     if (!context_)

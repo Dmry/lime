@@ -29,10 +29,13 @@ struct Time_range
 
 struct Time_series
 {
-    using primitive = double;
-    using type = std::vector<primitive>;
+    using value_primitive = double;
+    using value_type = std::vector<value_primitive>;
 
-    Time_series(Time_range::type time_range)
+    using time_primitive = Time_range::primitive;
+    using time_type = Time_range::type;
+
+    Time_series(time_type time_range)
     :   time_range_{time_range},
         values_(time_range_->size())
     {}
@@ -45,17 +48,17 @@ struct Time_series
     auto time_zipped_begin() {return boost::make_zip_iterator(boost::make_tuple(time_range_->begin(), values_.begin()));}
     auto time_zipped_end()   {return boost::make_zip_iterator(boost::make_tuple(time_range_->end(), values_.end()));}
 
-    std::vector<primitive> operator()() {return values_;}
+    std::vector<value_primitive> operator()() {return values_;}
 
-    std::vector<primitive>::iterator begin() {return values_.begin();}
-    std::vector<primitive>::iterator end() {return values_.end();}
+    std::vector<value_primitive>::iterator begin() {return values_.begin();}
+    std::vector<value_primitive>::iterator end() {return values_.end();}
 
-    std::vector<primitive>::const_iterator cbegin() {return values_.cbegin();}
-    std::vector<primitive>::const_iterator cend() {return values_.cend();}
+    std::vector<value_primitive>::const_iterator cbegin() {return values_.cbegin();}
+    std::vector<value_primitive>::const_iterator cend() {return values_.cend();}
 
     size_t size() {return values_.size();}
 
     protected:
-        Time_range::type time_range_;
-        Time_series::type values_;
+        Time_series::time_type time_range_;
+        Time_series::value_type values_;
 };

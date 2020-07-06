@@ -13,7 +13,7 @@ struct Contour_length_fluctuations : public Time_series, public Compute
     Summation<double> sum;
 
    public:
-    Contour_length_fluctuations(Time_range::type time_range_);
+    Contour_length_fluctuations(Time_series::time_type time_range_);
     Contour_length_fluctuations(const Contour_length_fluctuations&) = default;
 
     // Lower bound for integration
