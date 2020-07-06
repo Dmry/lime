@@ -1,12 +1,8 @@
 #pragma once
 
-#include <boost/iterator/zip_iterator.hpp>
-
 #include "context.hpp"
 #include "time_series.hpp"
-#include "tube.hpp"
 #include "contour_length_fluctuations.hpp"
-#include "constraint_release/heuzey.hpp"
 #include "constraint_release/constraint_release.hpp"
 
 #include <memory>
