@@ -93,11 +93,16 @@ struct generate : ics::command<generate>, result_cmd
         f(base,     "-b", "--base",                 args::help("Exponential growthfactor between steps")                   );
     }
 
+    double log_with_base(double base, double x)
+    {
+        return std::log(x)/std::log(base);
+    }
+
     void run()
     {
         BOOST_LOG_TRIVIAL(info) << "Generating...";
 
-        Time_range::type time = Time_range::construct(log_with_base::calculate(base, t));
+        Time_range::type time = Time_range::construct(log_with_base(base, t));
 
         std::generate(time->begin(), time->end(), [n=0, this] () mutable {return std::pow(base, n++);});
 

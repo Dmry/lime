@@ -97,7 +97,7 @@ Medium::medium(double epsilon) const
 Long::Long(const double Z_, const double tau_e_, const double tau_df_)
 : Medium(Z_, tau_e_, tau_df_)
 {
-    epsilon_C = std::pow(2.0, -(8*n+12.0)/11.0)*std::exp(32.0/11.0)*(1.0/tau_df);
+    epsilon_C = std::pow(2.0, (-8*n+12.0)/11.0)*std::exp(32.0/11.0)*(1.0/tau_df);
 }
 
 double
@@ -183,9 +183,9 @@ HEU_constraint_release::update(const Context& ctx)
 
     std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional(ctx.Z, ctx.tau_e));
 
-    if (ep)
+    if (Async_except::get()->ep)
     {
-        std::rethrow_exception(ep);
+        std::rethrow_exception(Async_except::get()->ep);
     }
 
     mtx.unlock();
@@ -205,13 +205,11 @@ HEU_constraint_release::integral_result(double lower_bound, double t)
         using namespace boost::math::quadrature;
         exp_sinh<double> integrator;
         double termination = std::sqrt(std::numeric_limits<double>::epsilon());
-        double L1;
-        size_t levels;
-        res = integrator.integrate(f, lower_bound, std::numeric_limits<double>::infinity(), termination, nullptr, &L1, &levels);
+        res = integrator.integrate(f, lower_bound, std::numeric_limits<double>::infinity(), termination, nullptr, nullptr, nullptr);
     }
     catch (const std::exception& ex)
     {
-        ep = std::current_exception();
+        Async_except::get()->ep = std::current_exception();
         BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
     }
 

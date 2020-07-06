@@ -36,11 +36,10 @@ LM_constraint_release::calculate(double Gf_norm, double tau_df, double tau_e, do
 
     std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional());
 
-    if (ep)
+    if (Async_except::get()->ep)
     {
-        std::rethrow_exception(ep);
+        std::rethrow_exception(Async_except::get()->ep);
     }
-
 }
 
 double
@@ -142,13 +141,11 @@ LM_constraint_release::integral_result(double t)
         using namespace boost::math::quadrature;
         exp_sinh<double> integrator;
         double termination = std::sqrt(std::numeric_limits<double>::epsilon());
-        double L1;
-        size_t levels;
-        res = integrator.integrate(f, 0, std::numeric_limits<double>::infinity(), termination, nullptr, &L1, &levels);
+        res = integrator.integrate(f, 0, std::numeric_limits<double>::infinity(), termination, nullptr, nullptr, nullptr);
     }
     catch (const std::exception& ex)
     {
-        ep = std::current_exception();
+        Async_except::get()->ep = std::current_exception();
         BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
     }
 

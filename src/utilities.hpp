@@ -14,15 +14,6 @@ static constexpr double gas_constant = 1; // m^2 kg s^-2 K^-1 mol^-1
 static constexpr double k_B = 1;          // J K^-1
 static constexpr double T_static = 1;     // K
 
-struct log_with_base
-{
-    static double
-    calculate(double base, double x)
-    {
-        return std::log(x)/std::log(base);
-    }
-};
-
 /* template<typename... T>
 void
 check_nan_impl(T... x)
@@ -75,20 +66,6 @@ template<typename T>
 T typesafe_voidptr_cast(void* data)
 {
     return std::any_cast<T>(*static_cast<std::any*>(data));
-}
-
-template<typename T>
-void
-info_or_warn(const std::string& description, T var)
-{
-    if (var < 0 or var != var)
-    {
-        BOOST_LOG_TRIVIAL(warning) << description << ": " << var;
-    }
-    else
-    {
-        BOOST_LOG_TRIVIAL(info) << description << ": " << var;
-    }
 }
 
 template<typename T>

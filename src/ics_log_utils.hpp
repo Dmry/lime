@@ -6,7 +6,36 @@
 #include <boost/log/utility/formatting_ostream.hpp>
 #include <boost/log/utility/setup/console.hpp>
 
-#define BOOST_LOG_DYN_LINK 1
+#include <stdexcept>
+
+// NOT THREAD SAFE, meant for parallel std::algorithms only
+struct Async_except
+{
+    private:
+        static Async_except* inst;
+
+    public:
+
+        static Async_except* get();
+        std::exception_ptr ep;
+
+    protected:
+        Async_except();
+};
+
+template<typename T>
+void
+info_or_warn(const std::string& description, T var)
+{
+    if (var < 0 or var != var)
+    {
+        BOOST_LOG_TRIVIAL(warning) << description << ": " << var;
+    }
+    else
+    {
+        BOOST_LOG_TRIVIAL(info) << description << ": " << var;
+    }
+}
 
 struct ics_log
 {
