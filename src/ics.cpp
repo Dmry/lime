@@ -95,11 +95,11 @@ struct generate : ics::command<generate>, result_cmd
 
     void run()
     {
-        BOOST_LOG_TRIVIAL(info) << "Generating..";
+        BOOST_LOG_TRIVIAL(info) << "Generating...";
 
         Time_range::type time = Time_range::construct(log_with_base::calculate(base, t));
 
-        std::generate(time->begin(), time->end(), [n=0, this] () mutable {auto x = std::pow(base, n++); while(x < t) return x;});
+        std::generate(time->begin(), time->end(), [n=0, this] () mutable {return std::pow(base, n++);});
 
         std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
 
@@ -154,9 +154,9 @@ struct fit : ics::command<fit>, result_cmd
         std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
         ICS_result driver(time, builder.get());
 
-        driver.get_cv() = c_v;
+        driver.CR->c_v_ = c_v;
 
-        sigmoid_wrapper<double> cv_wrapper = driver.get_cv();
+        sigmoid_wrapper<double> cv_wrapper = driver.CR->c_v_;
         Fit<double, double, sigmoid_wrapper<double>> fit(driver.context_->N_e, driver.context_->tau_monomer, cv_wrapper);
 
         fit.fit(g_t, driver, wt_pow);
@@ -165,7 +165,7 @@ struct fit : ics::command<fit>, result_cmd
 
         driver.context_->print();
 
-        BOOST_LOG_TRIVIAL(info) << "cv: " << driver.get_cv();
+        BOOST_LOG_TRIVIAL(info) << "cv: " << driver.CR->c_v_;
         
         Vector_writer<dat> writer;
 

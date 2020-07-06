@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../utilities.hpp"
+#include "../time_series.hpp"
 
 #include "constraint_release.hpp"
 
@@ -12,6 +12,7 @@ struct LM_constraint_release : public IConstraint_release
   public:
     LM_constraint_release(Time_range::type time_range_, double c_v_, size_t realizations_);
     void calculate(double Gf_norm, double tau_df, double tau_e, double Z);
+    void update(const Context& ctx) override;
 
   private:
     double cp(double Gf_norm, double tau_df, double tau_e, double p_star, double e_star, double epsilon, double e_start);
@@ -25,8 +26,6 @@ struct LM_constraint_release : public IConstraint_release
     auto R_t_functional();
 
     std::exception_ptr ep;
-
-    void update(const Context& ctx) override;
 
     size_t realizations_;
     std::vector<double> km;

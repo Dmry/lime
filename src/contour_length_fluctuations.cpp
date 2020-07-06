@@ -11,12 +11,8 @@
 #include <cmath>
 #include <limits>
 
-Contour_length_fluctuations::Contour_length_fluctuations()
-: sum{1.0, 0.0, 2.0}
-{}
-
 Contour_length_fluctuations::Contour_length_fluctuations(Time_range::type time_range_)
-: sum{1.0, 0.0, 2.0}, time_range{time_range_}, mu_t(time_range->size(), 0.0)
+: Time_series(time_range_), sum{1.0, 0.0, 2.0}
 {}
 
 // Has to be above call site to facilitate type deduction
@@ -42,7 +38,7 @@ Contour_length_fluctuations::mu_t_functional(double Z, double tau_e, double G_f_
 void
 Contour_length_fluctuations::update(const Context& ctx)
 {
-    std::transform(exec_policy, time_range->begin(), time_range->end(), mu_t.begin(), mu_t_functional(ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df));
+    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), mu_t_functional(ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df));
 
     if (ep)
     {

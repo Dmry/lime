@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/math/differentiation/finite_difference.hpp>
+
 #include <vector>
 #include <functional>
 #include <numeric>

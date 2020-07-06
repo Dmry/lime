@@ -181,7 +181,7 @@ HEU_constraint_release::update(const Context& ctx)
         model = std::make_unique<Extra_long>(ctx.Z, ctx.tau_e, ctx.tau_df);
     }
 
-    std::transform(exec_policy, time_range_->begin(), time_range_->end(), R_t_.begin(), R_t_functional(ctx.Z, ctx.tau_e));
+    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional(ctx.Z, ctx.tau_e));
 
     if (ep)
     {

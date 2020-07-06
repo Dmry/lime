@@ -34,7 +34,7 @@ LM_constraint_release::calculate(double Gf_norm, double tau_df, double tau_e, do
 
     generate(Gf_norm, tau_df, tau_e, E_star, Z);
 
-    std::transform(exec_policy, time_range_->begin(), time_range_->end(), R_t_.begin(), R_t_functional());
+    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional());
 
     if (ep)
     {
