@@ -1,6 +1,7 @@
 #pragma once
 
-#include <boost/math/differentiation/finite_difference.hpp>
+#include "time_series.hpp"
+#include "parallel_policy.hpp"
 
 #include <vector>
 #include <functional>
@@ -23,3 +24,5 @@ T RMSE(const std::vector<T>& first, const std::vector<T>& second)
     // Square root of average error
     return std::sqrt(sum / static_cast<T>(first.size()));
 }
+
+Time_series derivative(Time_series_functional::functional_type functional, Time_series_functional::time_type time_range);

@@ -2,7 +2,7 @@
 
 #include "heuzey.hpp"
 #include "../parallel_policy.hpp"
-#include "../ics_log_utils.hpp"
+#include "../lime_log_utils.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -154,6 +154,12 @@ HEU_constraint_release::R_t_functional(double Z, double tau_e)
     return [=](double t) -> double {
         return tau_e*integral_result(epsilon_0, t);
     };
+}
+
+Time_series_functional::functional_type
+HEU_constraint_release::time_functional(const Context& ctx)
+{
+    return R_t_functional(ctx.Z, ctx.tau_e);
 }
 
 void

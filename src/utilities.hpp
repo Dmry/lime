@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ics_log_utils.hpp"
+#include "lime_log_utils.hpp"
 
 #include <cmath>
 #include <stdexcept>
@@ -24,6 +24,13 @@ check_nan_impl(T... x)
 	}
 }
  */
+
+template<typename T>
+T log_with_base(T base, T x)
+{
+    return std::log(x)/std::log(base);
+}
+
 template<typename T>
 struct sigmoid_wrapper
 {

@@ -10,7 +10,7 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit_nlinear.h>
 
-#include "ics_log_utils.hpp"
+#include "lime_log_utils.hpp"
 #include "time_series.hpp"
 #include "result.hpp"
 

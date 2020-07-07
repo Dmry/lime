@@ -153,10 +153,8 @@ struct G_e : public System_physics
 };
 
 // Depends: Z, tau_e
-struct Tau_r : public System_physics
+struct Tau_r : public Physics
 {
-    Tau_r(System_ptr system) : System_physics{system} {}
-
     void apply(Context& ctx) override
     {
         ctx.tau_r = square(ctx.Z) * ctx.tau_e;
@@ -164,10 +162,8 @@ struct Tau_r : public System_physics
 };
 
 // Depends: Z, tau_e
-struct Tau_d_0 : public System_physics
+struct Tau_d_0 : public Physics
 {
-    Tau_d_0(System_ptr system) : System_physics{system} {}
-
     void apply(Context& ctx) override
     {
         ctx.tau_d_0 = 3 * std::pow(ctx.Z, 3.0) * ctx.tau_e;
@@ -175,10 +171,8 @@ struct Tau_d_0 : public System_physics
 };
 
 // Depends: Z, tau_d_0
-struct Tau_df : public System_physics
+struct Tau_df : public Physics
 {
-    Tau_df(System_ptr system) : System_physics{system} {}
-
     void apply(Context& ctx) override
     {
         const double pow_Z =  std::pow(ctx.Z, 3.0/2.0);

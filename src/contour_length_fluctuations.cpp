@@ -1,6 +1,6 @@
 #include "contour_length_fluctuations.hpp"
 #include "parallel_policy.hpp"
-#include "ics_log_utils.hpp"
+#include "lime_log_utils.hpp"
 
 #include <boost/math/special_functions/gamma.hpp>
 #include <boost/math/quadrature/exp_sinh.hpp>
@@ -12,27 +12,33 @@
 #include <limits>
 
 Contour_length_fluctuations::Contour_length_fluctuations(Time_series::time_type time_range_)
-: Time_series(time_range_)
+: Time_series_functional(time_range_)
 {}
 
 // Has to be above call site to facilitate type deduction
-inline auto
+Time_series_functional::functional_type
 Contour_length_fluctuations::mu_t_functional(double Z, double tau_e, double G_f_normed, double tau_df)
 {
     // p_star
     Summation<double> sum{1.0, std::sqrt(Z/10.0), 2.0};
 
-    double e_star_ = e_star(Z, tau_e, G_f_normed);
+    double e_starr = e_star(Z, tau_e, G_f_normed);
 
     return [=](double t) mutable -> double {
         auto f = [=](const double& p){return 1.0/square(p) * exp( - t*square(p)/tau_df );};
 
-        const double integ = integral_result(e_star_, t);
+        const double integ = integral_result(e_starr, t);
 
         const double res = (integ*0.306)/(Z*std::pow(tau_e, 0.25));
 
         return G_f_normed* sum(f) + res;
     };
+}
+
+Time_series_functional::functional_type
+Contour_length_fluctuations::time_functional(const Context& ctx)
+{
+    return mu_t_functional(ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df);
 }
 
 void

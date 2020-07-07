@@ -4,7 +4,7 @@
 
 #include "../utilities.hpp"
 #include "../parallel_policy.hpp"
-#include "../ics_log_utils.hpp"
+#include "../lime_log_utils.hpp"
 
 #include "likhtmanmcleish.hpp"
 
@@ -18,23 +18,29 @@ LM_constraint_release::LM_constraint_release(Time_series::time_type time_range, 
 {}
 
 auto
-LM_constraint_release::R_t_functional()
+LM_constraint_release::R_t_functional(double Z, double tau_e, double G_f_normed, double tau_df)
 {
+    km.resize(Z*realizations_);
+
+    double E_star = e_star(Z, tau_e, G_f_normed);
+
+    generate(G_f_normed, tau_df, tau_e, E_star, Z);
+
     return [this](double t) -> double {
         return integral_result(t);
     };
 }
 
-void
-LM_constraint_release::calculate(double Gf_norm, double tau_df, double tau_e, double Z)
+Time_series_functional::functional_type
+LM_constraint_release::time_functional(const Context& ctx)
 {
-    km.resize(Z*realizations_);
+    return R_t_functional(ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df);
+}
 
-    double E_star = e_star(Z, tau_e, Gf_norm);
-
-    generate(Gf_norm, tau_df, tau_e, E_star, Z);
-
-    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional());
+void
+LM_constraint_release::update(const Context& ctx)
+{
+    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional(ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df));
 
     if (Async_except::get()->ep)
     {
@@ -50,12 +56,6 @@ LM_constraint_release::e_star(double Z, double tau_e, double G_f_normed)
     constexpr auto f = [](const double& p) -> double {return 1.0/square(p);};
 
     return 1.0/(tau_e*std::pow(Z,4.0)) * std::pow((4.0*0.306 / (1-G_f_normed*sum(f)) ),4.0);
-}
-
-void
-LM_constraint_release::update(const Context& ctx)
-{
-    calculate(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, ctx.Z);
 }
 
 void

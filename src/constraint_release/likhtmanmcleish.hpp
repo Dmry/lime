@@ -11,8 +11,8 @@ struct LM_constraint_release : public IConstraint_release
 {
   public:
     LM_constraint_release(Time_series::time_type time_range_, double c_v_, size_t realizations_);
-    void calculate(double Gf_norm, double tau_df, double tau_e, double Z);
     void update(const Context& ctx) override;
+    virtual Time_series_functional::functional_type time_functional(const Context& ctx) override;
 
   private:
     double cp(double Gf_norm, double tau_df, double tau_e, double p_star, double e_star, double epsilon, double e_start);
@@ -23,7 +23,7 @@ struct LM_constraint_release : public IConstraint_release
 
     double Me(double epsilon);
     double integral_result(double t);
-    auto R_t_functional();
+    auto R_t_functional(double Z, double tau_e, double G_f_normed, double tau_df);
 
     std::exception_ptr ep;
 

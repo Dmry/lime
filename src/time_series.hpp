@@ -2,14 +2,27 @@
 
 #include <boost/iterator/zip_iterator.hpp>
 
+#include "context.hpp"
+#include "utilities.hpp"
+
 #include <vector>
 #include <memory>
+#include <functional>
 
 struct Time_range
 {
     using primitive = double;
     using base = std::vector<primitive>;
     using type = std::shared_ptr<base>;
+
+    static Time_range::type generate_exponential(primitive base, primitive max)
+    {
+        Time_range::type time = Time_range::construct(log_with_base<primitive>(base, max));
+
+        std::generate(time->begin(), time->end(), [n=0, base] () mutable {return std::pow(base, n++);});
+
+        return time;
+    }
 
     template<typename... T>
     static
@@ -58,7 +71,22 @@ struct Time_series
 
     size_t size() {return values_.size();}
 
+    Time_range::base copy_time_range() {return *time_range_;}
+    Time_series::value_type copy_values() {return values_;}
+
     protected:
         Time_series::time_type time_range_;
         Time_series::value_type values_;
+};
+
+struct Time_series_functional : public Time_series
+{
+    Time_series_functional(Time_series::time_type time_range)
+    :   Time_series(time_range)
+    {}
+    
+    using functional_type = std::function<Time_series::value_primitive (Time_series::time_primitive)>;
+
+    // Provides a generalized interface for all time functionals
+    virtual functional_type time_functional(const Context&) = 0;
 };

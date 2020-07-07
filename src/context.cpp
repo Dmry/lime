@@ -116,14 +116,38 @@ ICS_context_builder::gather_physics()
 
     // System-related physics
     context_->add_physics_in_place<Tau_e_alt>(system_);
-    context_->add_physics_in_place<Tau_r>(system_);
-    context_->add_physics_in_place<Tau_d_0>(system_);
-    context_->add_physics_in_place<Tau_df>(system_);
     context_->add_physics_in_place<G_e>(system_);
+
+    // Tau_e dependent physics
+    context_->add_physics_in_place<Tau_r>();
+    context_->add_physics_in_place<Tau_d_0>();
+    context_->add_physics_in_place<Tau_df>();
 }
 
 void
 ICS_context_builder::attach_computes(std::vector<Compute*> computes)
+{
+    context_->attach_compute(computes);
+}
+
+CLF_context_builder::CLF_context_builder()
+:   IContext_builder{}
+{}
+
+CLF_context_builder::CLF_context_builder(std::shared_ptr<Context> context)
+:   IContext_builder{context}
+{}
+
+void
+CLF_context_builder::gather_physics()
+{
+    context_->add_physics_in_place<G_f_normed>();
+    context_->add_physics_in_place<Tau_d_0>();
+    context_->add_physics_in_place<Tau_df>();
+}
+
+void
+CLF_context_builder::attach_computes(std::vector<Compute*> computes)
 {
     context_->attach_compute(computes);
 }

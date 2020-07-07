@@ -37,7 +37,7 @@ info_or_warn(const std::string& description, T var)
     }
 }
 
-struct ics_log
+struct lime_log
 {
     static void coloring_formatter(boost::log::record_view const& rec, boost::log::formatting_ostream& strm)
     {
