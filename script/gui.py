@@ -84,7 +84,7 @@ class ArgumentRepresentation(QWidget):
         self.box = QDoubleSpinBox()
         self.box.setValue(value)
         self.box.setDecimals(10)
-        self.box.setMaximum(100000000)
+        self.box.setMaximum(100000000000000)
         self.box.setValue(value)
         self.label = QLabel(name)
         self.label.setBuddy(self.box)
@@ -118,13 +118,13 @@ class ParameterBox(QGroupBox):
         self.layout = QGridLayout()
 
         self.addParameter("Final time", "-t", 20000000)
-        self.addParameter("Time spacing factor", "-d", 1.2)
-        self.addParameter("Length", "-N", 1024)
-        self.addParameter("Entanglement time", "-e", 30000)
-        self.addParameter("Monomers per segment", "-n", 120)
-        #self.addParameter("Entanglement modulus", "-g", 0.1)
+        self.addParameter("Time spacing factor", "-b", 1.2)
+        self.addParameter("Length", "-N", 2048)
+        self.addParameter("Temperature", "-T", 1)
+        self.addParameter("Monomers per segment", "-n", 60)
+        self.addParameter("Monomer relaxation time", "-m", 1)
+        self.addParameter("Constraint release parameter", "-c", 1.0)
         self.addParameter("Density", "-r", 0.68)
-        self.addParameter("Constraint release parameter", "-c", 0.1)
 
       #  self.addParameter("Rouse time", "-R", 100)
       #  self.addParameter("Mass", "-M", 1)
@@ -172,7 +172,7 @@ class GenerateBox(QWidget):
 
     def generate(self):
         self.results.removeVolatile()
-        command = ["../build/ics", "generate", "-o", "../data/out_gui"]
+        command = ["../build/lime", "generate", "-o", "../data/out_gui"]
         for switch, value in self.parameters.toCliArgs():
             command.append(switch)
             command.append(value)

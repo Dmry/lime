@@ -6,6 +6,7 @@
 
 #include "parse.hpp"
 #include "contour_length_fluctuations.hpp"
+#include "constraint_release/heuzey.hpp"
 #include "lime_log_utils.hpp"
 #include "result.hpp"
 #include "parallel_policy.hpp"
@@ -52,11 +53,27 @@ struct lime : args::group<lime>
     void run() {}
 };
 
+struct cmd_writes_output_file
+{
+    Vector_writer<dat> writer;
+
+    cmd_writes_output_file()
+    {
+        writer.path = "out.dat";
+    }
+
+    template<class F>
+    void parse(F f)
+    {
+        f(writer.path,       "-o", "--output",                   args::help("Set the file path to write output to"),             args::required());
+    }
+};
+
 struct result_cmd
 {
     std::shared_ptr<Context> ctx;
     std::shared_ptr<System> system;
-    std::filesystem::path outpath;
+    
     double c_v;
 
     result_cmd() : ctx{std::make_shared<Context>()}, system{std::make_shared<System>()}, c_v{0.1}
@@ -73,11 +90,53 @@ struct result_cmd
         f(ctx->N_e,          "-n", "--monomersperentanglement",  args::help("Number of monomers per entanglement"),              args::required());
         f(ctx->tau_monomer,  "-m", "--monomerrelaxationtime",    args::help("Initial guess of the monomer relaxation time"),     args::required());
         f(c_v,               "-c", "--crparameter",              args::help("Constraint release parameter"),                     args::required());
-        f(outpath,           "-o", "--output",                   args::help("Set the file path to write output to"),             args::required());
+    }
+
+    ICS_result build_driver(Time_series::time_type time)
+    {
+        std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
+
+        ICS_result driver(time, builder.get());
+
+        driver.CR->c_v_ = c_v;
+        driver.context_->apply_physics();
+
+        return driver;
     }
 };
 
-struct generate : lime::command<generate>, result_cmd
+struct cmd_takes_file_input
+{
+    std::filesystem::path inpath;
+    size_t file_col;
+
+    cmd_takes_file_input() : inpath{}, file_col{1}
+    {}
+
+    template <class F>
+    void parse(F f)
+    {
+        f(inpath,                                 args::help("Path to data file")                                );
+        f(file_col, "-C", "--column",             args::help("Column to select from input file. Defaults to 1.") );
+    }
+
+    Time_series get_file_contents()
+    {
+        Time_series::value_type g_t;
+        Time_series::time_type time;
+
+        auto file_contents = parse_file<ics_file_format, clear_comments, store_headers>(inpath);
+
+        g_t = Get<Time_series::value_primitive>::col(file_col, file_contents.out);
+        time = Time_range::convert(Get<double>::col(0, file_contents.out));
+
+        file_contents.buffer.clear();
+
+        return Time_series(time, g_t);
+    }
+};
+
+struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd
 {
     double base;
     double max_t;
@@ -94,7 +153,8 @@ struct generate : lime::command<generate>, result_cmd
     void parse(F f)
     {
         result_cmd::parse(f);
-        f(max_t,    "-t", "--time",                         args::help("Final timestep for calculation"),                args::required());
+        cmd_writes_output_file::parse(f);
+        f(max_t,    "-t", "--maxtime",                      args::help("Maximum timestep for calculation"),              args::required());
         f(base,     "-b", "--base",                         args::help("Exponential growthfactor between steps")                         );
     }
 
@@ -104,25 +164,55 @@ struct generate : lime::command<generate>, result_cmd
 
         Time_range::type time = Time_range::generate_exponential(base, max_t);
 
-        std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
+        ICS_result driver = build_driver(time);
 
-        ICS_result driver(time, builder.get());
-        driver.context_->apply_physics();
         driver.context_->print();
 
-        Vector_writer<dat> writer;
-        writer.path = outpath;
         writer.write(*time, driver.result());
     }
 };
 
-struct fit : lime::command<fit>, result_cmd
+struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
 {
-    std::filesystem::path inpath;
-    size_t file_col;
+    bool rmse;
+
+    compare() : rmse{false}
+    {}
+
+    static constexpr const char* help()
+    {
+        return "Compare an existing G(t) curve to generated data.";
+    }
+
+    template<class F>
+    void parse(F f)
+    {
+        cmd_takes_file_input::parse(f);
+        result_cmd::parse(f);
+        f(rmse,     "--rmse",                               args::help("Calculate RMSE between two G(t) curves"),         args::set(true));
+    }
+
+    void run()
+    {
+        BOOST_LOG_TRIVIAL(info) << "Generating...";
+
+        auto input = get_file_contents();
+
+        ICS_result driver = build_driver(input.get_time_range());
+
+        if (rmse)
+        {
+            BOOST_LOG_TRIVIAL(info) << "RMSE: " << RMSE<Time_series::value_primitive>(input.get_values(), driver.result());
+        }
+    }
+};
+
+
+struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, result_cmd
+{
     double wt_pow;
 
-    fit() : inpath{}, file_col{1}, wt_pow{1.2}
+    fit() : wt_pow{1.2}
     {}
     
     static const char* help()
@@ -133,60 +223,44 @@ struct fit : lime::command<fit>, result_cmd
     template<class F>
     void parse(F f)
     {
+        cmd_takes_file_input::parse(f);
         result_cmd::parse(f);
-        f(inpath,                                 args::help("Path to data file")                                                       );
-        f(file_col, "-C", "--column",             args::help("Column to select from input file"),                       args::required());
+        cmd_writes_output_file::parse(f);
         f(wt_pow,   "-w", "--weightpower",        args::help("Set power for the weighting factor 1/(x^wt)")                             );
     }
 
     void run()
     {
-        Time_series::value_type g_t;
-        Time_series::time_type time;
+        auto input = get_file_contents();
 
-        auto file_contents = parse_file<ics_file_format, clear_comments, store_headers>(inpath);
+        auto driver = build_driver(input.get_time_range());
 
-        g_t = Get<Time_series::value_primitive>::col(file_col, file_contents.out);
-        time = Time_range::convert(Get<double>::col(0, file_contents.out));
+        //sigmoid_wrapper<double> cv_wrapper = driver.CR->c_v_;
+        Fit<double, double> fit(driver.context_->N_e, driver.context_->tau_monomer);
 
-        file_contents.buffer.clear();
-
-        std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
-        ICS_result driver(time, builder.get());
-
-        driver.CR->c_v_ = c_v;
-
-        sigmoid_wrapper<double> cv_wrapper = driver.CR->c_v_;
-        Fit<double, double, sigmoid_wrapper<double>> fit(driver.context_->N_e, driver.context_->tau_monomer, cv_wrapper);
-
-        fit.fit(g_t, driver, wt_pow);
+        fit.fit(input.get_values(), driver, wt_pow);
 
         auto res = driver.result();
 
         driver.context_->print();
 
         BOOST_LOG_TRIVIAL(info) << "cv: " << driver.CR->c_v_;
-        
-        Vector_writer<dat> writer;
 
-        if (not outpath.empty())
-            writer.path = outpath;
-
-        writer.write(*time, res);
+        writer.write(*input.get_time_range(), res);
     }
 };
 
-struct reproduce : lime::command<reproduce>
+struct reproduce : lime::command<reproduce>, cmd_writes_output_file
 {
     std::shared_ptr<Context> ctx;
-    std::filesystem::path outpath;
 
     double base;
     double max_t;
 
     bool du;
+    bool dr;
 
-    reproduce() : ctx{std::make_shared<Context>()}, base{1.2}, du{false}
+    reproduce() : ctx{std::make_shared<Context>()}, base{1.2}, du{false}, dr{false}
     {}
 
     static const char* help()
@@ -199,10 +273,21 @@ struct reproduce : lime::command<reproduce>
     {
         f(ctx->Z,       "-Z", "--entanglementno",           args::help("Number of entanglements"),                              args::required());
         f(ctx->tau_e,   "-e", "--entanglementtime",         args::help("Entanglement time"),                                    args::required());
-        f(outpath,      "-o", "--output",                   args::help("Set the file path to write output to"),                 args::required());
         f(max_t,        "-t", "--time",                     args::help("Final timestep for calculation"),                       args::required());
         f(base,         "-b", "--base",                     args::help("Exponential growthfactor between steps")                                );
-        f(du,           "-u", "--dmu",                      args::help("Reproduce dimensionless derivative of mu (figure 2)."), args::set(true) );
+        f(du,           "-u", "--dmu",                      args::help("Reproduce dimensionless derivative of mu (figure 2)."),  args::set(true));
+        f(dr,           "-R", "--dR",                       args::help("Reproduce dimensionless derivative of R  (figure 6)."),  args::set(true));
+        cmd_writes_output_file::parse(f);
+    } 
+
+    Time_series dimensionless_series(Time_series_functional& functional, std::shared_ptr<Context> ctx)
+    {
+        auto func = functional.time_functional(*ctx);
+        Time_series series = derivative(func, functional.get_time_range());
+        std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [&ctx](auto val) mutable -> double {
+                return boost::get<1>(val) *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(boost::get<0>(val), 0.75);
+        });
+        return series;
     }
 
     void run()
@@ -213,24 +298,24 @@ struct reproduce : lime::command<reproduce>
         ctx = builder.get_context();
         ctx->apply_physics();
 
-        Time_range::type normalized_time = Time_range::generate_exponential(base, max_t);
+        Time_series_functional::time_type normalized_time = Time_range::generate_exponential(base, max_t);
 
         std::for_each(exec_policy, normalized_time->begin(), normalized_time->end(), [this](Time_range::primitive& t){t /= ctx->tau_e;});
-        
-        if (du)
+
+        std::list<std::pair<std::string, Time_series_functional*>> list;
+
+        if (du) list.emplace_back("du", new Contour_length_fluctuations(normalized_time));
+        if (dr) list.emplace_back("dr", new HEU_constraint_release(normalized_time, 1.0));
+
+        for (auto& pair : list)
         {
-            BOOST_LOG_TRIVIAL(info) << "Writing d mu(t) to " << outpath;
+            BOOST_LOG_TRIVIAL(info) << "Writing " << pair.first << "...";
+            writer.path.replace_filename(pair.first + "_" + writer.path.filename().string());
 
-            Vector_writer<dat> writer;
-            writer.path = outpath;
+            auto& series = *pair.second;
 
-            auto func = Contour_length_fluctuations::mu_t_functional(ctx->Z, ctx->tau_e, ctx->G_f_normed, ctx->tau_df);
-            auto series = derivative(func, normalized_time);
-            std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [this](auto val) mutable -> double {
-                return boost::get<1>(val) *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(boost::get<0>(val), 0.75);
-            });
-
-            writer.write(series.copy_time_range(), series.copy_values());
+            auto result = dimensionless_series(series, ctx);
+            writer.write(*result.get_time_range(), result.get_values());
         }
     }
 };

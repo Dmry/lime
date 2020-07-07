@@ -166,7 +166,7 @@ struct Tau_d_0 : public Physics
 {
     void apply(Context& ctx) override
     {
-        ctx.tau_d_0 = 3 * std::pow(ctx.Z, 3.0) * ctx.tau_e;
+        ctx.tau_d_0 = 3.0 * std::pow(ctx.Z, 3.0) * ctx.tau_e;
     }
 };
 

@@ -97,7 +97,7 @@ Medium::medium(double epsilon) const
 Long::Long(const double Z_, const double tau_e_, const double tau_df_)
 : Medium(Z_, tau_e_, tau_df_)
 {
-    epsilon_C = std::pow(2.0, (-8*n+12.0)/11.0)*std::exp(32.0/11.0)*(1.0/tau_df);
+    epsilon_C = std::pow(2.0, (-8.0*n+12.0)/11.0)*std::exp(32.0/11.0)*(1.0/tau_df);
 }
 
 double
@@ -147,8 +147,28 @@ HEU_constraint_release::HEU_constraint_release(Time_series::time_type time_range
 
 
 inline auto
-HEU_constraint_release::R_t_functional(double Z, double tau_e)
+HEU_constraint_release::R_t_functional(double Z, double tau_e, double tau_df)
 {
+    using namespace constraint_release;
+
+    // Select model appropriate for chain length
+    if (Z <= 10.0)
+    {
+        model = std::make_unique<Short>(Z, tau_e, tau_df);
+    }
+    else if (Z > 10.0 and Z <= 160.0)
+    {
+        model = std::make_unique<Medium>(Z, tau_e, tau_df);
+    }
+    else if (Z > 160.0 and Z <= 360.0)
+    {
+        model = std::make_unique<Long>(Z, tau_e, tau_df);
+    }
+    else
+    {
+        model = std::make_unique<Extra_long>(Z, tau_e, tau_df);
+    }
+
     double epsilon_0 = epsilon_zero(Z, tau_e);
 
     return [=](double t) -> double {
@@ -159,42 +179,18 @@ HEU_constraint_release::R_t_functional(double Z, double tau_e)
 Time_series_functional::functional_type
 HEU_constraint_release::time_functional(const Context& ctx)
 {
-    return R_t_functional(ctx.Z, ctx.tau_e);
+    return R_t_functional(ctx.Z, ctx.tau_e, ctx.tau_df);
 }
 
 void
 HEU_constraint_release::update(const Context& ctx)
 {
-    mtx.lock();
-
-    using namespace constraint_release;
-
-    // Select model appropriate for chain length
-    if (ctx.Z <= 10.0)
-    {
-        model = std::make_unique<Short>(ctx.Z, ctx.tau_e, ctx.tau_df);
-    }
-    else if (ctx.Z > 10.0 and ctx.Z <= 160.0)
-    {
-        model = std::make_unique<Medium>(ctx.Z, ctx.tau_e, ctx.tau_df);
-    }
-    else if (ctx.Z > 160.0 and ctx.Z <= 360.0)
-    {
-        model = std::make_unique<Long>(ctx.Z, ctx.tau_e, ctx.tau_df);
-    }
-    else
-    {
-        model = std::make_unique<Extra_long>(ctx.Z, ctx.tau_e, ctx.tau_df);
-    }
-
-    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional(ctx.Z, ctx.tau_e));
+    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional(ctx.Z, ctx.tau_e, ctx.tau_df));
 
     if (Async_except::get()->ep)
     {
         std::rethrow_exception(Async_except::get()->ep);
     }
-
-    mtx.unlock();
 }
 
 double

@@ -89,7 +89,8 @@ struct Summation
 
         // Should really implement a comparison suitable for floating point numbers
         for(; p <= end; p += step)
-            sum += func(p); 
+            sum += func(p);
+
 
         return sum;
     }

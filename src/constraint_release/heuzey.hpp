@@ -86,28 +86,18 @@ struct Extra_long : public Long
 
 struct HEU_constraint_release : public IConstraint_release
 {
-    struct userdata {
-        std::unique_ptr<constraint_release::IModel> model;
-        double t;
-    };
-
   protected:
-
-    double epsilon_0;
     std::unique_ptr<constraint_release::IModel> model;
 
   public:
 
     HEU_constraint_release(Time_series::time_type time_range, double c_v);
 
-    auto R_t_functional(double Z, double tau_e);
+    auto R_t_functional(double Z, double tau_e, double tau_df);
     virtual Time_series_functional::functional_type time_functional(const Context& ctx) override;
     void update(const Context& ctx) override;
 
   private:
-    std::mutex mtx;
-    std::exception_ptr ep;
-
     // Equation 20, select lower bound for integration
     double epsilon_zero(double Z, double tau_e);
     double integral_result(double lower_bound, double t);

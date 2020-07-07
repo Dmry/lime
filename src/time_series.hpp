@@ -53,6 +53,14 @@ struct Time_series
         values_(time_range_->size())
     {}
 
+    Time_series(time_type time_range, value_type values)
+    :   time_range_{time_range},
+        values_(values)
+    {
+        if (time_range_->size() != values_.size())
+            throw std::runtime_error("Tried to create a time series with incompatible time and value series.");
+    }
+
     Time_series(const Time_series& other_time_series)
     :   time_range_{other_time_series.time_range_},
         values_(other_time_series.values_)
@@ -71,8 +79,8 @@ struct Time_series
 
     size_t size() {return values_.size();}
 
-    Time_range::base copy_time_range() {return *time_range_;}
-    Time_series::value_type copy_values() {return values_;}
+    Time_series::time_type get_time_range() {return time_range_;}
+    Time_series::value_type get_values() {return values_;}
 
     protected:
         Time_series::time_type time_range_;
