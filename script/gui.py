@@ -172,7 +172,7 @@ class GenerateBox(QWidget):
 
     def generate(self):
         self.results.removeVolatile()
-        command = ["../build/lime", "generate", "-o", "../data/out_gui"]
+        command = ["../build/lime", "generate", "--rub", "-o", "../data/out_gui"]
         for switch, value in self.parameters.toCliArgs():
             command.append(switch)
             command.append(value)

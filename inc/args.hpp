@@ -215,7 +215,10 @@ void write_value_to(T& result, const std::string& x)
         write_value_to(primitive, x);
         result.emplace(primitive);
     }
-    else  */if constexpr(not is_container<T>{} or std::is_convertible<T, std::string>{})
+    else  */
+    if constexpr(std::is_enum<T>::value)
+        result = static_cast<T>(stoi(x));
+    else if constexpr(not is_container<T>{} or std::is_convertible<T, std::string>{})
         result = value_parser<T>::apply(x);
     else if constexpr(is_container<T>{} and not std::is_convertible<T, std::string>{})
         result.insert(result.end(), value_parser<typename T::value_type>::apply(x));

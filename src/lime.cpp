@@ -7,6 +7,7 @@
 #include "parse.hpp"
 #include "contour_length_fluctuations.hpp"
 #include "constraint_release/heuzey.hpp"
+#include "constraint_release/rubinsteincolby.hpp"
 #include "lime_log_utils.hpp"
 #include "result.hpp"
 #include "parallel_policy.hpp"
@@ -73,10 +74,12 @@ struct result_cmd
 {
     std::shared_ptr<Context> ctx;
     std::shared_ptr<System> system;
+
+    constraint_release::impl CR_impl;
     
     double c_v;
 
-    result_cmd() : ctx{std::make_shared<Context>()}, system{std::make_shared<System>()}, c_v{0.1}
+    result_cmd() : ctx{std::make_shared<Context>()}, system{std::make_shared<System>()}, CR_impl{constraint_release::impl::HEUZEY}, c_v{0.1}
     {
         system->T = 1.0;
     }
@@ -84,19 +87,20 @@ struct result_cmd
     template<class F>
     void parse(F f)
     {
-        f(ctx->N,            "-N", "--length",                   args::help("Chain length"),                                     args::required());
-        f(system->rho,       "-r", "--density",                  args::help("Density"),                                          args::required());
-        f(system->T,         "-T", "--temperature",              args::help("Temperature")                                                       );
-        f(ctx->N_e,          "-n", "--monomersperentanglement",  args::help("Number of monomers per entanglement"),              args::required());
-        f(ctx->tau_monomer,  "-m", "--monomerrelaxationtime",    args::help("Initial guess of the monomer relaxation time"),     args::required());
-        f(c_v,               "-c", "--crparameter",              args::help("Constraint release parameter"),                     args::required());
+        f(ctx->N,            "-N", "--length",                   args::help("Chain length"),                                 args::required());
+        f(system->rho,       "-r", "--density",                  args::help("Density"),                                      args::required());
+        f(system->T,         "-T", "--temperature",              args::help("Temperature")                                                   );
+        f(ctx->N_e,          "-n", "--monomersperentanglement",  args::help("Number of monomers per entanglement"),          args::required());
+        f(ctx->tau_monomer,  "-m", "--monomerrelaxationtime",    args::help("Initial guess of the monomer relaxation time"), args::required());
+        f(c_v,               "-c", "--crparameter",              args::help("Constraint release parameter"),                 args::required());
+        f(CR_impl,           "--rub",                            args::help("Enable Rubinstein&Colby constraint release"),   args::set(constraint_release::impl::RUBINSTEINCOLBY));
     }
 
     ICS_result build_driver(Time_series::time_type time)
     {
         std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
 
-        ICS_result driver(time, builder.get());
+        ICS_result driver(time, builder.get(), CR_impl);
 
         driver.CR->c_v_ = c_v;
         driver.context_->apply_physics();
@@ -175,8 +179,10 @@ struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd
 struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
 {
     bool rmse;
+    bool nrrmse;
+    bool narmse;
 
-    compare() : rmse{false}
+    compare() : rmse{false}, nrrmse{false}, narmse{false}
     {}
 
     static constexpr const char* help()
@@ -189,20 +195,30 @@ struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
     {
         cmd_takes_file_input::parse(f);
         result_cmd::parse(f);
-        f(rmse,     "--rmse",                               args::help("Calculate RMSE between two G(t) curves"),         args::set(true));
+        f(rmse,     "--rmse",                               args::help("Calculate RMSE between two G(t) curves"),          args::set(true));
+        f(narmse,    "--narmse",                            args::help("Calculate RMSE normalized by average between two G(t) curves"),         args::set(true));
+        f(nrrmse,    "--nrrmse",                            args::help("Calculate RMSE normalized by range between two G(t) curves"),           args::set(true));
     }
 
     void run()
     {
-        BOOST_LOG_TRIVIAL(info) << "Generating...";
-
         auto input = get_file_contents();
 
         ICS_result driver = build_driver(input.get_time_range());
 
+        auto res = driver.result();
+
         if (rmse)
         {
-            BOOST_LOG_TRIVIAL(info) << "RMSE: " << RMSE<Time_series::value_primitive>(input.get_values(), driver.result());
+            BOOST_LOG_TRIVIAL(info) << "RMSE: " << RMSE<Time_series::value_primitive>(res, input.get_values());
+        }
+        if (narmse)
+        {
+            BOOST_LOG_TRIVIAL(info) << "NRMSE (by average): " << NRMSE_average<Time_series::value_primitive>(res, input.get_values());
+        }
+        if (nrrmse)
+        {
+            BOOST_LOG_TRIVIAL(info) << "NRMSE (by range): " << NRMSE_range<Time_series::value_primitive>(res, input.get_values());
         }
     }
 };
@@ -235,7 +251,6 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
 
         auto driver = build_driver(input.get_time_range());
 
-        //sigmoid_wrapper<double> cv_wrapper = driver.CR->c_v_;
         Fit<double, double> fit(driver.context_->N_e, driver.context_->tau_monomer);
 
         fit.fit(input.get_values(), driver, wt_pow);
@@ -258,9 +273,10 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file
     double max_t;
 
     bool du;
-    bool dr;
+    bool drr;
+    bool drh;
 
-    reproduce() : ctx{std::make_shared<Context>()}, base{1.2}, du{false}, dr{false}
+    reproduce() : ctx{std::make_shared<Context>()}, base{1.2}, du{false}, drr{false}, drh{false}
     {}
 
     static const char* help()
@@ -275,8 +291,9 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file
         f(ctx->tau_e,   "-e", "--entanglementtime",         args::help("Entanglement time"),                                    args::required());
         f(max_t,        "-t", "--time",                     args::help("Final timestep for calculation"),                       args::required());
         f(base,         "-b", "--base",                     args::help("Exponential growthfactor between steps")                                );
-        f(du,           "-u", "--dmu",                      args::help("Reproduce dimensionless derivative of mu (figure 2)."),  args::set(true));
-        f(dr,           "-R", "--dR",                       args::help("Reproduce dimensionless derivative of R  (figure 6)."),  args::set(true));
+        f(du,           "--dmu",                         args::help("Reproduce dimensionless derivative of mu (figure 2)."),  args::set(true));
+        f(drr,          "--drrub",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Colby's method (figure 6)."),  args::set(true));
+        f(drh,          "--drheu",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Heuzey's method (figure 6)."),  args::set(true));
         cmd_writes_output_file::parse(f);
     } 
 
@@ -304,13 +321,16 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file
 
         std::list<std::pair<std::string, Time_series_functional*>> list;
 
-        if (du) list.emplace_back("du", new Contour_length_fluctuations(normalized_time));
-        if (dr) list.emplace_back("dr", new HEU_constraint_release(normalized_time, 1.0));
+       // if (du)  list.emplace_back("du", new Contour_length_fluctuations(*ctx));
+        if (drr) list.emplace_back("dr_rub", new RUB_constraint_release(normalized_time, 1.0));
+        if (drh) list.emplace_back("dr_heu", new HEU_constraint_release(normalized_time, 1.0));
+
+        auto original_filename = writer.path.filename().string();
 
         for (auto& pair : list)
         {
-            BOOST_LOG_TRIVIAL(info) << "Writing " << pair.first << "...";
-            writer.path.replace_filename(pair.first + "_" + writer.path.filename().string());
+            BOOST_LOG_TRIVIAL(info) << "Computing " << pair.first << "...";
+            writer.path.replace_filename(pair.first + "_" + original_filename);
 
             auto& series = *pair.second;
 

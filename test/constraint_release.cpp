@@ -1,29 +1,25 @@
-#include <catch2/catch.hpp>
+#define BOOST_TEST_MAIN
+#if !defined( WIN32 )
+    #define BOOST_TEST_DYN_LINK
+#endif
 
-#include "../src/constraint_release.hpp"
+#define BOOST_TEST_MODULE test_constraint_release
+#include <boost/test/unit_test.hpp>
 
-#include <gsl/gsl_errno.h>
+#include "../src/constraint_release/constraint_release.hpp"
+#include "../src/time_series.hpp"
 
-#include "utilities.hpp"
+#include <array>
 
-TEST_CASE("CR fills R_t after update")
+BOOST_AUTO_TEST_CASE( constraint_release_factory )
 {
-    double entanglement_time{10.0};
-    double c_v{0.5};
-    double Z = GENERATE(2.0, 50.0, 100.0, 200.0, 100.0);
-    double tau_df{0.1};
-    Time_range::type time_range = test_time_range();
+    std::array<constraint_release::impl, 2> impls{constraint_release::impl::HEUZEY, constraint_release::impl::RUBINSTEINCOLBY};
 
-    gsl_set_error_handler_off();
+    auto time_range = Time_range::generate_exponential(1.2, 1000);
 
-// TODO: CUSTOM ERROR HANDLER GSL
-
-    Constraint_release cr(c_v, time_range);
-
-    cr.calculate(Z, entanglement_time, tau_df);
-
-    using Catch::Matchers::VectorContains;
-    
- //   REQUIRE_THAT( cr.R_t, !VectorContains( NAN ) );
-    REQUIRE_THAT( cr.R_t, !VectorContains( 0.0 ) );
+    for (auto impl : impls)
+    {
+        auto CR = constraint_release::Factory::create(impl, time_range, 0.1);
+        BOOST_CHECK( CR );
+    }
 }

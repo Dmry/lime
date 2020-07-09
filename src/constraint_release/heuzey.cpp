@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <cmath>
 
-using namespace constraint_release;
+Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, Time_series::time_type, double> heuzey_constraint_release_factory(constraint_release::impl::HEUZEY);
+
+using namespace heuzey_constraint_release;
 
 IModel::IModel(const double Z_, const double tau_e_, const double tau_df_)
 : Z{Z_}, tau_e{tau_e_}, tau_df{tau_df_}
@@ -149,7 +151,7 @@ HEU_constraint_release::HEU_constraint_release(Time_series::time_type time_range
 inline auto
 HEU_constraint_release::R_t_functional(double Z, double tau_e, double tau_df)
 {
-    using namespace constraint_release;
+    using namespace heuzey_constraint_release;
 
     // Select model appropriate for chain length
     if (Z <= 10.0)

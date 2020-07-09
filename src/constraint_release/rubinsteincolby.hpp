@@ -7,10 +7,10 @@
 #include <random>
 #include <stdexcept>
 
-struct LM_constraint_release : public IConstraint_release
+struct RUB_constraint_release : public IConstraint_release
 {
   public:
-    LM_constraint_release(Time_series::time_type time_range_, double c_v_, size_t realizations_);
+    RUB_constraint_release(Time_series::time_type time_range_, double c_v_, size_t realizations_ = 1000);
     void update(const Context& ctx) override;
     virtual Time_series_functional::functional_type time_functional(const Context& ctx) override;
 

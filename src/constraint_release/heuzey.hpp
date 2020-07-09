@@ -9,12 +9,14 @@
 #include "../time_series.hpp"
 #include "constraint_release.hpp"
 
+#include "../factory.hpp"
+
 #include <vector>
 #include <variant>
 #include <mutex>
 #include <stdexcept>
 
-namespace constraint_release
+namespace heuzey_constraint_release
 {
 
 struct IModel
@@ -87,7 +89,7 @@ struct Extra_long : public Long
 struct HEU_constraint_release : public IConstraint_release
 {
   protected:
-    std::unique_ptr<constraint_release::IModel> model;
+    std::unique_ptr<heuzey_constraint_release::IModel> model;
 
   public:
 

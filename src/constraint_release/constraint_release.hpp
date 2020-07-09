@@ -2,6 +2,7 @@
 
 #include "../context.hpp"
 #include "../time_series.hpp"
+#include "../factory.hpp"
 
 #include <vector>
 
@@ -18,3 +19,14 @@ struct IConstraint_release : public Time_series_functional, public Compute
     virtual void update(const Context& ctx) = 0;
     double c_v_;
 };
+
+namespace constraint_release
+{
+    enum impl
+    {
+        HEUZEY,
+        RUBINSTEINCOLBY,
+    };
+
+    typedef Factory_template<IConstraint_release, impl, Time_series::time_type, double> Factory;
+}

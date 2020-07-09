@@ -87,6 +87,15 @@ struct Time_series
         Time_series::value_type values_;
 };
 
+struct Time_functor
+{
+    Time_functor()
+    {}
+
+    virtual Time_series operator()(const Time_series::time_type&) = 0;
+    virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) = 0;
+};
+
 struct Time_series_functional : public Time_series
 {
     Time_series_functional(Time_series::time_type time_range)

@@ -1,26 +1,26 @@
-find_package(Catch2 REQUIRED)
+find_package(Boost COMPONENTS log log_setup unit_test_framework REQUIRED)
 
-file(GLOB src ${ics_SOURCE_DIR}/src/*.cpp)
-file(GLOB test_src ${ics_SOURCE_DIR}/test/*.cpp)
-list(REMOVE_ITEM src ${ics_SOURCE_DIR}/src/ics.cpp)
+set(lime_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/)
 
-add_executable (ics_test ${src} ${test_src})
+file(GLOB_RECURSE src ${lime_SOURCE_DIR}/*.cpp )
+list(REMOVE_ITEM src ${lime_SOURCE_DIR}/lime.cpp)
+list(REMOVE_ITEM src ${lime_SOURCE_DIR}/lime.cpp)
 
-target_link_libraries(ics_test Catch2::Catch2)
-target_link_libraries(ics_test GSL::gsl)
+include_directories(${lime_SOURCE_DIR}/inc)
+include_directories(${Boost_INCLUDE_DIR})
 
+add_executable(lime_test ${src} ${cr_src} constraint_release.cpp)
+
+target_link_libraries(lime_test -lm tbb ${Boost_LIBRARIES} Boost::boost GSL::gsl stdc++ Boost::unit_test_framework)
+
+find_package(Threads REQUIRED)
 if(THREADS_HAVE_PTHREAD_ARG)
-  target_compile_options(ics_test PUBLIC "-pthread")
+  target_compile_options(lime_test PUBLIC "-pthread")
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+  target_link_libraries(lime_test "${CMAKE_THREAD_LIBS_INIT}")
 endif()
 
-target_link_libraries(ics_test tbb ${Boost_LIBRARIES})
+enable_testing()
 
-add_definitions(-DTEST)
-
-include(CTest)
-include(Catch)
-
-link_directories(${ics_SOURCE_DIR}/src)
-include_directories(${ics_SOURCE_DIR}/inc)
-
-catch_discover_tests(ics_test)
+add_test(NAME boost_test COMMAND $<TARGET_FILE:lime_test>)

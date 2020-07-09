@@ -72,7 +72,7 @@ void Context::print()
     // Credit: Joao Tavora
     boost::fusion::for_each(boost::mpl::range_c<
         unsigned, 0, boost::fusion::result_of::size<Context>::value>(),
-            [&](auto index){
+            [&](auto index) constexpr {
                 info_or_warn(boost::fusion::extension::struct_member_name<Context,index>::call(), boost::fusion::at_c<index>(*this));
             }
     );

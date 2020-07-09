@@ -11,13 +11,13 @@
 class IResult : public Time_series
 {
     public:
-        IResult(Time_series::time_type time_range);
+        explicit IResult(Time_series::time_type time_range);
         virtual Time_series::value_type result() = 0;
 };
 
 struct ICS_result : public IResult
 {
-    ICS_result(Time_series::time_type time_range, IContext_builder* builder);
+    ICS_result(Time_series::time_type time_range, IContext_builder* builder, constraint_release::impl impl = constraint_release::impl::HEUZEY);
 
     Time_series::value_type result() override;
 
