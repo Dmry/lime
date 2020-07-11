@@ -19,9 +19,9 @@ endif()
 
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
-set(CMAKE_CXX_FLAGS "-march=native -pipe -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS} "-g")
-set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS} "-Ofast")
+set(CMAKE_CXX_FLAGS "-O3 -march=native -pipe -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -march=native -pipe -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -pipe -Wall -Wextra")
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
