@@ -44,7 +44,6 @@ struct is_one_of {
         }
 
     public:
-
         static
         bool
         check(char c)

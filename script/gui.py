@@ -1,4 +1,9 @@
-import sys, random, qdarkgraystyle, csv, os, subprocess
+import sys
+import random
+import qdarkgraystyle
+import csv
+import os
+import subprocess
 from PyQt5.QtWidgets import QDialog
 from PyQt5 import QtCore
 
