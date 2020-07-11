@@ -3,6 +3,9 @@ dist: bionic
 language: cpp
 compiler: gcc
 
+services:
+  - docker
+
 addons:
   apt:
     update: true
@@ -19,6 +22,7 @@ before_install:
   - sudo add-apt-repository -y ppa:mhier/libboost-latest
   - sudo apt-get update
   - sudo apt-get install -y libboost1.73-dev libtbb-dev
+  - docker build -t lime docker
 
 script:
   # Export CC and CXX to tell cmake which compiler to use
