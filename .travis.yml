@@ -28,10 +28,10 @@ jobs:
         - sudo apt-get update
         - sudo apt-get install -y libboost1.73-dev libtbb-dev
         - docker build -t lime docker
+      env:
+        - CC=/usr/bin/gcc-9
+        - CXX=/usr/bin/g++-9
       script:
-        # Export CC and CXX to tell cmake which compiler to use
-        - export CC=/usr/bin/gcc-9
-        - export CXX=/usr/bin/g++-9
         # Check versions of gcc, g++ and cmake
         - gcc -v && g++ -v && cmake --version
 
