@@ -17,6 +17,11 @@ Or if you decide to _not_ run docker rootless, add sudo before your docker comma
 docker run lime sh -c "lime --your --lime --commands"
 ```
 
+Allow multi-threading by appending the number of available threads with the `--cpus` flag to your `docker run` command:
+```
+docker run --cpus=<value> lime sh -c "lime --your --lime --commands"
+```
+
 If you need to recover data files from lime, run it with an additional `-v` flag like so:
 ```
 docker run -v lime_output:/home/lime/output lime sh -c "lime --your --lime --commands"
