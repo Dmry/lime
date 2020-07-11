@@ -1,19 +1,20 @@
 dist: bionic
-sudo: require
+sudo: false
 
 language: cpp
 compiler: gcc
 
 addons:
   apt:
+    update: true
     sources:
       - ubuntu-toolchain-r-test
-      - ppa:mhier/libboost-latest
+      - 'ppa:mhier/libboost-latest'
     packages:
       - gcc-8
       - g++-8
       - cmake
-      - libboost
+      - boost1.73
       - libtbb-dev
       - libgsl-dev
 
