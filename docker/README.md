@@ -21,6 +21,7 @@ Allow multi-threading by appending the number of available threads with the `--c
 ```
 docker run --cpus=<value> lime sh -c "lime --your --lime --commands"
 ```
+More runtime resource options can be found [here](https://docs.docker.com/config/containers/resource_constraints/).
 
 If you need to recover data files from lime, run it with an additional `-v` flag like so:
 ```
