@@ -1,3 +1,4 @@
+os: linux
 dist: bionic
 
 language: cpp
@@ -10,7 +11,6 @@ jobs:
         - docker
       before_install:
         - docker build -t lime docker
-  include:
     - stage: manual
       addons:
         apt:
