@@ -4,6 +4,7 @@ dist: bionic
 jobs:
   include:
     - stage: docker
+      language: generic
       services:
         - docker
       before_install:
