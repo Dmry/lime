@@ -1,0 +1,29 @@
+dist: trusty
+sudo: require
+
+language: cpp
+compiler: gcc
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-10
+      - g++-10
+      - cmake
+      - libboost-all-dev
+
+script:
+  - ln -s /usr/bin/gcc-10 /usr/local/bin/gcc
+  - ln -s /usr/bin/g++-10 /usr/local/bin/g++
+
+  # Export CC and CXX to tell cmake which compiler to use
+  - export CC=/usr/bin/gcc-10
+  - export CXX=/usr/bin/g++-10
+  # Check versions of gcc, g++ and cmake
+  - gcc -v && g++ -v && cmake --version
+
+  - mkdir build && cd build
+  - cmake ..
+  - make lime
