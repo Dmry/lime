@@ -20,4 +20,6 @@ endif()
 
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
+# TODO: make tbb dependency optional
+
 target_link_libraries(lime -lm tbb ${Boost_LIBRARIES} Boost::boost GSL::gsl stdc++)
