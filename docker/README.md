@@ -16,6 +16,17 @@ Or if you decide to _not_ run docker rootless, add sudo before your docker comma
 ```
 docker run lime sh -c "lime --your --lime --commands"
 ```
+If you need to recover data files from lime, run it with an additional `-v` flag like so:
+```
+docker run -v lime_output:/home/lime/output lime sh -c "lime --your --lime --commands"
+```
+
+Don't forget to specify the correct `-o` flag in your commands, e.g.:
+```
+docker run -v lime_output:/home/lime/output lime sh -c "lime generate -o /home/lime/output/data.dat --some --more --flags"
+```
+
+Data can then be retrieved from `/var/lib/docker/volumes/lime_output/_data` or in rootless mode: `~/.local/share/docker/volumes/lime_output/_data`
 
 Allow multi-threading by appending the number of available threads with the `--cpus` flag to your `docker run` command:
 ```
