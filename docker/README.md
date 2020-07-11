@@ -24,7 +24,7 @@ docker run -v lime_output:/home/lime/output lime sh -c "lime --your --lime --com
 
 Don't forget to specify the correct `-o` flag in your commands, e.g.:
 ```
-docker run -v lime_output:/home/lime/output lime sh -c "lime generate -o /home/lime/output --some --more --flags"
+docker run -v lime_output:/home/lime/output lime sh -c "lime generate -o /home/lime/output/data.dat --some --more --flags"
 ```
 
 Data can then be retrieved from `/var/lib/docker/volumes/lime_output/_data` or in rootless mode: `~/.local/share/docker/volumes/lime_output/_data`
