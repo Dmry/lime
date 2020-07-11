@@ -13,6 +13,7 @@ addons:
       - g++-8
       - cmake
       - libboost-all-dev
+      - libtbb-dev
 
 script:
   - ln -s /usr/bin/gcc-8 /usr/local/bin/gcc
