@@ -1,9 +1,6 @@
 os: linux
 dist: bionic
 
-language: cpp
-compiler: gcc
-
 jobs:
   include:
     - stage: docker
@@ -11,7 +8,9 @@ jobs:
         - docker
       before_install:
         - docker build -t lime docker
-    - stage: manual
+    - stage: compile
+      language: cpp
+      compiler: gcc
       addons:
         apt:
           update: true
