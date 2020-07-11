@@ -7,6 +7,6 @@ Tool for the application of Likhtman&amp; McLeish' reptation theory under active
 ## Requirements
 
 * Boost >= 1.66
-* Intel-tbb (optional for multithreading)
-* C++17 (GCC >= 7, Clang >= 4)
+* C++17 with parallel algorithms (GCC >= 9)
 * GNU Scientific Library >= 2.4
+* Intel-tbb
