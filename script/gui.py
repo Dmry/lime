@@ -1,5 +1,5 @@
 import sys, random, qdarkgraystyle, csv, os, subprocess
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QDialog
 from PyQt5 import QtCore
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -259,7 +259,7 @@ class ResultsBox(QTabWidget):
 
     def removeVolatile(self):
         for file in self.dataSets:
-            if file.volatile == True:
+            if file.volatile:
                 self.dataSets.remove(file)
 
 class FilesTable(QTableWidget):

@@ -91,9 +91,9 @@ class ICS_context_builder : public IContext_builder
         ICS_context_builder(std::shared_ptr<struct System> sys);
         ICS_context_builder(std::shared_ptr<struct System> sys, std::shared_ptr<Context>);
 
-        virtual void gather_physics() override;
+        void gather_physics() override;
 
-        virtual void attach_computes(std::vector<Compute*> computes) override;
+        void attach_computes(std::vector<Compute*> computes) override;
     
     protected:
         std::shared_ptr<System> system_;
@@ -105,7 +105,7 @@ class CLF_context_builder : public IContext_builder
         CLF_context_builder();
         CLF_context_builder(std::shared_ptr<Context>);
 
-        virtual void gather_physics() override;
+        void gather_physics() override;
 
-        virtual void attach_computes(std::vector<Compute*> computes) override;
+        void attach_computes(std::vector<Compute*> computes) override;
 };

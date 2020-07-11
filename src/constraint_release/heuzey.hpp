@@ -25,7 +25,6 @@ struct IModel
     virtual double operator() (double epsilon) const = 0;
 
   protected:
-
     const double Z;
     const double tau_e;
     const double tau_df;
@@ -38,10 +37,9 @@ struct IModel
 struct Short : public IModel
 {
     Short(const double Z_, const double tau_e_, const double tau_df_);
-    virtual double operator () (double epsilon) const override;
+    double operator () (double epsilon) const override;
 
   protected:
-    
     double low(double epsilon) const;
     double high(double epsilon) const;
 };
@@ -51,10 +49,9 @@ struct Medium : public Short
 {
     Medium(const double Z_, const double tau_e_, const double tau_df_);
 
-    virtual double operator () (double epsilon) const override;
+    double operator () (double epsilon) const override;
 
   protected:
-
     double n;
     double epsilon_B;
 
@@ -69,13 +66,11 @@ struct Long : public Medium
     double epsilon_C;
 
   public:
-
     Long(const double Z_, const double tau_e_, const double tau_df_);
 
-    virtual double operator () (double epsilon) const override;
+    double operator () (double epsilon) const override;
 
   protected:
-
     double medium_high(double epsilon) const;
 };
 
@@ -92,11 +87,10 @@ struct HEU_constraint_release : public IConstraint_release
     std::unique_ptr<heuzey_constraint_release::IModel> model;
 
   public:
-
     HEU_constraint_release(Time_series::time_type time_range, double c_v);
 
     auto R_t_functional(double Z, double tau_e, double tau_df);
-    virtual Time_series_functional::functional_type time_functional(const Context& ctx) override;
+    Time_series_functional::functional_type time_functional(const Context& ctx) override;
     void update(const Context& ctx) override;
 
   private:

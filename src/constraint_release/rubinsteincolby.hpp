@@ -12,7 +12,7 @@ struct RUB_constraint_release : public IConstraint_release
   public:
     RUB_constraint_release(Time_series::time_type time_range_, double c_v_, size_t realizations_ = 1000);
     void update(const Context& ctx) override;
-    virtual Time_series_functional::functional_type time_functional(const Context& ctx) override;
+    Time_series_functional::functional_type time_functional(const Context& ctx) override;
 
   private:
     double cp(double Gf_norm, double tau_df, double tau_e, double p_star, double e_star, double epsilon, double e_start);

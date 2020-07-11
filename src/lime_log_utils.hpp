@@ -15,7 +15,6 @@ struct Async_except
         static Async_except* inst;
 
     public:
-
         static Async_except* get();
         std::exception_ptr ep;
 

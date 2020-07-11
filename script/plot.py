@@ -25,5 +25,3 @@ for input_file in args.input:
 
 plt.legend()
 plt.show()
-
-    

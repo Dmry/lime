@@ -17,7 +17,6 @@ template< class Base, typename Key_type, class... Args >
 class Factory_template
 {
 public:
-
    using Factory_function_type = std::function<std::unique_ptr<Base>(Args...)>;
 
    Factory_template(const Factory_template&) = delete;
