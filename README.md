@@ -9,4 +9,4 @@ Tool for the application of Likhtman&amp; McLeish' reptation theory under active
 * Boost >= 1.66
 * C++17 with parallel algorithms (GCC >= 9)
 * GNU Scientific Library >= 2.4
-* Intel-tbb
+* Intel-tbb >= 2018
