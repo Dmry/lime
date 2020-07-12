@@ -80,16 +80,16 @@ struct Summation
 {
     using sum_func_t = std::function<T(const T&)>;
 
-    Summation(T start_, T end_, T step_ = 1) : start{start_}, end{end_}, step{step_} {}
+    Summation(T start_, T end_, T step_, sum_func_t func) : start{start_}, end{end_}, step{step_}, func_{func} {}
 
-    T operator() (sum_func_t func)
+    T operator() ()
     {
         T sum {0};
         T p {start};
 
         // Should really implement a comparison suitable for floating point numbers
         for(; p <= end; p += step)
-            sum += func(p);
+            sum += func_(p);
 
 
         return sum;
@@ -98,4 +98,5 @@ struct Summation
     T start;
     T end;
     T step;
+    sum_func_t func_;
 };

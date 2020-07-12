@@ -52,11 +52,9 @@ RUB_constraint_release::update(const Context& ctx)
 double
 RUB_constraint_release::e_star(double Z, double tau_e, double G_f_normed)
 {
-    Summation sum{1.0, std::sqrt(Z/10.0), 2.0};
+    Summation<double> sum{1.0, std::sqrt(Z/10.0), 2.0, [](const double& p) -> double {return 1.0/square(p);}};
 
-    constexpr auto f = [](const double& p) -> double {return 1.0/square(p);};
-
-    return 1.0/(tau_e*std::pow(Z,4.0)) * std::pow((4.0*0.306 / (1.0-G_f_normed*sum(f)) ),4.0);
+    return 1.0/(tau_e*std::pow(Z,4.0)) * std::pow((4.0*0.306 / (1.0-G_f_normed*sum()) ),4.0);
 }
 
 void
@@ -163,21 +161,19 @@ RUB_constraint_release::cp(double Gf_norm, double tau_df, double tau_e, double p
 double
 RUB_constraint_release::cp_one(double Gf_norm, double tau_df, double p_star, double epsilon)
 {
-    Summation<double> sum(1.0, 0.0, 2.0);
-
-    auto f = [](const double& p) {return 1.0 / square(p);};
+    Summation<double> sum(1.0, 0.0, 2.0, [](const double& p) {return 1.0 / square(p);});
    
     double res{0.0};
 
     if (epsilon >= 1.0 / tau_df and epsilon < square(p_star)/tau_df)
     {
         sum.end = std::sqrt(epsilon*tau_df);
-        res = Gf_norm * sum(f);
+        res = Gf_norm * sum();
     }
     else if (epsilon >= square(p_star)/tau_df)
     {
         sum.end = p_star;
-        res = Gf_norm * sum(f);
+        res = Gf_norm * sum();
     }
 
     return res;
