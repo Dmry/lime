@@ -7,10 +7,10 @@ Currently only compiles on linux. Windows users should use the Docker version.
 
 ## Requirements
 
-* Boost >= 1.66
-* C++17 with parallel algorithms (GCC >= 9)
-* GNU Scientific Library >= 2.4
-* Intel-tbb >= 2018
+* Boost &ge; 1.66
+* C++17 with parallel algorithms (GCC &ge; 9)
+* GNU Scientific Library &ge; 2.4
+* Intel-tbb &ge; 2018
 
 ## Compiling from source
 
