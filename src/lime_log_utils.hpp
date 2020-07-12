@@ -7,6 +7,7 @@
 #include <boost/log/utility/setup/console.hpp>
 
 #include <stdexcept>
+#include <functional>
 
 // NOT THREAD SAFE, meant for parallel std::algorithms only
 struct Async_except
@@ -22,11 +23,11 @@ struct Async_except
         Async_except();
 };
 
-template<typename T>
+template<typename T, typename F>
 void
-info_or_warn(const std::string& description, T var)
+info_or_warn(const std::string& description, const T& var, F pred)
 {
-    if (var < 0 or var != var)
+    if (pred(var))
     {
         BOOST_LOG_TRIVIAL(warning) << description << ": " << var;
     }

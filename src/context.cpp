@@ -69,11 +69,16 @@ void Context::check_nan()
 // Logs to info if > 0, logs to warning if < 0
 void Context::print()
 {
+    auto warn_predicate = [](const double& val)->bool {return val < 0 or val != val;};
+
+    using namespace boost::fusion;
+
     // Credit: Joao Tavora
-    boost::fusion::for_each(boost::mpl::range_c<
-        unsigned, 0, boost::fusion::result_of::size<Context>::value>(),
+    for_each(boost::mpl::range_c<
+        unsigned, 0, result_of::size<Context>::value>(),
             [&](auto index) constexpr {
-                info_or_warn(boost::fusion::extension::struct_member_name<Context,index>::call(), boost::fusion::at_c<index>(*this));
+                info_or_warn(extension::struct_member_name<Context,index>::call(), at_c<index>(*this),
+                warn_predicate);
             }
     );
 }
