@@ -129,12 +129,6 @@ ICS_context_builder::gather_physics()
     context_->add_physics_in_place<Tau_df>();
 }
 
-void
-ICS_context_builder::attach_computes(std::vector<Compute*> computes)
-{
-    context_->attach_compute(computes);
-}
-
 CLF_context_builder::CLF_context_builder()
 :   IContext_builder{}
 {}
@@ -149,10 +143,4 @@ CLF_context_builder::gather_physics()
     context_->add_physics_in_place<G_f_normed>();
     context_->add_physics_in_place<Tau_d_0>();
     context_->add_physics_in_place<Tau_df>();
-}
-
-void
-CLF_context_builder::attach_computes(std::vector<Compute*> computes)
-{
-    context_->attach_compute(computes);
 }

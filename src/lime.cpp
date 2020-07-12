@@ -126,17 +126,7 @@ struct cmd_takes_file_input
 
     Time_series get_file_contents()
     {
-        Time_series::value_type g_t;
-        Time_series::time_type time;
-
-        auto file_contents = parse_file<ics_file_format, clear_comments, store_headers>(inpath);
-
-        g_t = Get<Time_series::value_primitive>::col(file_col, file_contents.out);
-        time = Time_range::convert(Get<double>::col(0, file_contents.out));
-
-        file_contents.buffer.clear();
-
-        return Time_series(time, g_t);
+        File_reader::get_file_contents(inpath, file_col);
     }
 };
 
@@ -272,11 +262,10 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file
     double base;
     double max_t;
 
-    bool du;
-    bool drr;
-    bool drh;
+    using list_pair = std::pair<std::string, Time_functor*>;
+    std::list<list_pair> list;
 
-    reproduce() : ctx{std::make_shared<Context>()}, base{1.2}, du{false}, drr{false}, drh{false}
+    reproduce() : ctx{std::make_shared<Context>()}, base{1.2}
     {}
 
     static const char* help()
@@ -291,21 +280,11 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file
         f(ctx->tau_e,   "-e", "--entanglementtime",         args::help("Entanglement time"),                                    args::required());
         f(max_t,        "-t", "--time",                     args::help("Final timestep for calculation"),                       args::required());
         f(base,         "-b", "--base",                     args::help("Exponential growthfactor between steps")                                );
-        f(du,           "--dmu",                         args::help("Reproduce dimensionless derivative of mu (figure 2)."),  args::set(true));
-        f(drr,          "--drrub",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Colby's method (figure 6)."),  args::set(true));
-        f(drh,          "--drheu",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Heuzey's method (figure 6)."),  args::set(true));
+        f(nullptr,       "--dmu",                         args::help("Reproduce dimensionless derivative of mu (figure 2)."),  args::lazy_callback(  [this](auto&&, auto&, auto&){list.push_back(list_pair("du", new Contour_length_fluctuations(*ctx)));}) );
+        f(nullptr,       "--drrub",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Colby's method (figure 6)."),  args::lazy_callback(  [this](auto&&, auto&, auto&){list.push_back(list_pair("dr_rub", new RUB_constraint_release(1.0, *ctx)));}) );
+        f(nullptr,       "--drheu",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Heuzey's method (figure 6)."),  args::lazy_callback(  [this](auto&&, auto&, auto&){list.push_back(list_pair("dr_heu", new HEU_constraint_release(1.0, *ctx)));}) );
         cmd_writes_output_file::parse(f);
     } 
-
-    Time_series dimensionless_series(Time_series_functional& functional, std::shared_ptr<Context> ctx)
-    {
-        auto func = functional.time_functional(*ctx);
-        Time_series series = derivative(func, functional.get_time_range());
-        std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [&ctx](auto val) mutable -> double {
-                return boost::get<1>(val) *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(boost::get<0>(val), 0.75);
-        });
-        return series;
-    }
 
     void run()
     {
@@ -315,15 +294,7 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file
         ctx = builder.get_context();
         ctx->apply_physics();
 
-        Time_series_functional::time_type normalized_time = Time_range::generate_exponential(base, max_t);
-
-        std::for_each(exec_policy, normalized_time->begin(), normalized_time->end(), [this](Time_range::primitive& t){t /= ctx->tau_e;});
-
-        std::list<std::pair<std::string, Time_series_functional*>> list;
-
-       // if (du)  list.emplace_back("du", new Contour_length_fluctuations(*ctx));
-        if (drr) list.emplace_back("dr_rub", new RUB_constraint_release(normalized_time, 1.0));
-        if (drh) list.emplace_back("dr_heu", new HEU_constraint_release(normalized_time, 1.0));
+        Time_series::time_type normalized_time = Time_range::generate_normalized_exponential(base, max_t, ctx->tau_e);
 
         auto original_filename = writer.path.filename().string();
 
@@ -332,10 +303,16 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file
             BOOST_LOG_TRIVIAL(info) << "Computing " << pair.first << "...";
             writer.path.replace_filename(pair.first + "_" + original_filename);
 
-            auto& series = *pair.second;
+            Time_series series = derivative(*pair.second, normalized_time);
 
-            auto result = dimensionless_series(series, ctx);
-            writer.write(*result.get_time_range(), result.get_values());
+            std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [this](auto val) mutable -> double {
+                double& time = boost::get<0>(val);
+                double& value = boost::get<1>(val);
+                
+                return value *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(time, 0.75);
+            });
+
+            writer.write(*series.get_time_range(), series.get_values());
         }
     }
 };

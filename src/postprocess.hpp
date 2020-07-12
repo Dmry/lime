@@ -48,4 +48,4 @@ T NRMSE_average(const std::vector<T>& fit, const std::vector<T>& original)
 
 
 
-Time_series derivative(Time_series_functional::functional_type functional, Time_series_functional::time_type time_range);
+Time_series derivative(const Time_functor& func, const Time_series::time_type& time_range);

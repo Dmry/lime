@@ -4,6 +4,7 @@
 
 #include "context.hpp"
 #include "utilities.hpp"
+#include "parallel_policy.hpp"
 
 #include <vector>
 #include <memory>
@@ -22,6 +23,15 @@ struct Time_range
         std::generate(time->begin(), time->end(), [n=0, base] () mutable {return std::pow(base, n++);});
 
         return time;
+    }
+
+    static Time_range::type generate_normalized_exponential(primitive base, primitive max, primitive norm)
+    {
+        auto&& range = generate_exponential(base, max);
+
+        std::for_each(exec_policy, range->begin(), range->end(), [norm](primitive& t){t /= norm;});
+
+        return std::forward<type>(range);
     }
 
     template<typename... T>

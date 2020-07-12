@@ -13,40 +13,47 @@
 #include <cmath>
 #include <utility>
 
-Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, Time_series::time_type, double> rubinstein_constraint_release_factory(constraint_release::impl::RUBINSTEINCOLBY);
+Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context&> rubinstein_constraint_release_factory(constraint_release::impl::RUBINSTEINCOLBY);
 
-RUB_constraint_release::RUB_constraint_release(Time_series::time_type time_range, double c_v, size_t realizations) : IConstraint_release{time_range, c_v}, realizations_{realizations}, km(), prng{std::random_device{}()}, dist(0, 1)
-{}
-
-auto
-RUB_constraint_release::R_t_functional(double Z, double tau_e, double G_f_normed, double tau_df)
+RUB_constraint_release::RUB_constraint_release(double c_v, Context& ctx, size_t realizations)
+: RUB_constraint_release{c_v, ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df, realizations}
 {
-    km.resize(Z);
-
-    double E_star = e_star(Z, tau_e, G_f_normed);
-
-    generate(G_f_normed, tau_df, tau_e, E_star, Z);
-
-    return [this](double t) -> double {
-        return integral_result(t);
-    };
+    ctx.attach_compute(this);
 }
 
-Time_series_functional::functional_type
-RUB_constraint_release::time_functional(const Context& ctx)
+RUB_constraint_release::RUB_constraint_release(double c_v, double Z, double tau_e, double G_f_normed, double tau_df, size_t realizations)
+: IConstraint_release{c_v}, Z_{Z}, tau_e_{tau_e}, G_f_normed_{G_f_normed}, tau_df_{tau_df}, realizations_{realizations}, km(static_cast<size_t>(Z_*realizations_)), prng{std::random_device{}()}, dist(0, 1)
 {
-    return R_t_functional(ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df);
+    const double E_star = e_star(Z_, tau_e_, G_f_normed_);
+    generate(G_f_normed_, tau_df_, tau_e_, E_star, Z_);
 }
 
-void
-RUB_constraint_release::update(const Context& ctx)
+Time_series RUB_constraint_release::operator()(const Time_series::time_type& time_range)
 {
-    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional(ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df));
+    Time_series res{time_range};
+
+    std::transform(exec_policy, time_range->begin(), time_range->end(), res.begin(), std::ref(*this));
 
     if (Async_except::get()->ep)
     {
         std::rethrow_exception(Async_except::get()->ep);
     }
+
+    return res;
+}
+
+Time_series::value_primitive RUB_constraint_release::operator()(const Time_series::time_primitive& t)
+{
+    return integral_result(t);
+}
+
+void
+RUB_constraint_release::update(const Context& ctx)
+{
+    Z_ = ctx.Z; tau_e_ = ctx.tau_e; G_f_normed_ = ctx.G_f_normed; tau_df_ = ctx.tau_df;
+    km.resize(static_cast<size_t>(Z_*realizations_));
+    const double E_star = e_star(Z_, tau_e_, G_f_normed_);
+    generate(G_f_normed_, tau_df_, tau_e_, E_star, Z_);
 }
 
 double
@@ -58,21 +65,17 @@ RUB_constraint_release::e_star(double Z, double tau_e, double G_f_normed)
 }
 
 void
-RUB_constraint_release::generate(double Gf_norm, double tau_df, double tau_e, double e_star, double Z)
+RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e, double e_star, double Z)
 {
     double p_star = std::sqrt(Z/10.0);
 
-    km.resize(static_cast<size_t>(Z*realizations_));
-
-    std::vector<double> rand(km.size());
-
-    std::generate(rand.begin(), rand.end(), [this] (){ return dist(prng); });
+    std::generate(km.begin(), km.end(), [this] (){ return dist(prng); });
 
     // minimize function depending on the random input
     auto minimize_functor = [&] (const double& rand_) {
         using namespace boost::math::tools; // For bracket_and_solve_root.
 
-        auto f = [&](double epsilon_){return cp(Gf_norm, tau_df, tau_e, p_star, e_star, Z, epsilon_) -  rand_;};
+        auto f = [&](double epsilon_){return cp(G_f_normed, tau_df, tau_e, p_star, e_star, Z, epsilon_) -  rand_;};
 
         eps_tolerance<double> tol(std::numeric_limits<double>::digits - 2.0);
 
@@ -90,26 +93,26 @@ RUB_constraint_release::generate(double Gf_norm, double tau_df, double tau_e, do
         return (r.first + (r.second - r.first) / 2.0);
     };
 
-    std::transform(exec_policy, rand.begin(), rand.end(), km.begin(), minimize_functor);
+    std::for_each(exec_policy, km.begin(), km.end(), minimize_functor);
 }
 
 double
 RUB_constraint_release::Me(double epsilon)
 {
     double sum{0.0};
-    size_t realization_size{km.size()/realizations_};
+    size_t realization_size{static_cast<size_t>(Z_)};
 
     for (size_t j = 0 ; j < realizations_ ; ++j)
     {
-        size_t strides = j * realization_size;
+        size_t stride = j * realization_size;
 
         // Si needs to be local to avoid race conditions.
         std::vector<double> Si(realization_size-1);
 
-        Si[0] = km[0+strides] + km[1+strides] - epsilon;
+        Si[0] = km[0+stride] + km[1+stride] - epsilon;
 
         // Race condition alert! No parallel execution here
-        for (size_t i = 1+strides, s = 1 ; i < strides+Si.size() ; ++i, ++s)
+        for (size_t i = 1+stride, s = 1 ; i < stride+Si.size() ; ++i, ++s)
             Si[s] = km[i] + km[i+1] - epsilon - square(km[i]) / Si[s-1];
 
         // par_unseq count_if is horrendously slow on the test system.
@@ -153,13 +156,13 @@ RUB_constraint_release::integral_result(double t)
 }
 
 double
-RUB_constraint_release::cp(double Gf_norm, double tau_df, double tau_e, double p_star, double e_star, double Z,  double epsilon)
+RUB_constraint_release::cp(double G_f_normed, double tau_df, double tau_e, double p_star, double e_star, double Z,  double epsilon)
 {
-    return cp_one(Gf_norm, tau_df, p_star, epsilon) + cp_two(Z, tau_e, e_star, epsilon);
+    return cp_one(G_f_normed, tau_df, p_star, epsilon) + cp_two(Z, tau_e, e_star, epsilon);
 }
 
 double
-RUB_constraint_release::cp_one(double Gf_norm, double tau_df, double p_star, double epsilon)
+RUB_constraint_release::cp_one(double G_f_normed, double tau_df, double p_star, double epsilon)
 {
     Summation<double> sum(1.0, 0.0, 2.0, [](const double& p) {return 1.0 / square(p);});
    
@@ -168,12 +171,12 @@ RUB_constraint_release::cp_one(double Gf_norm, double tau_df, double p_star, dou
     if (epsilon >= 1.0 / tau_df and epsilon < square(p_star)/tau_df)
     {
         sum.end = std::sqrt(epsilon*tau_df);
-        res = Gf_norm * sum();
+        res = G_f_normed * sum();
     }
     else if (epsilon >= square(p_star)/tau_df)
     {
         sum.end = p_star;
-        res = Gf_norm * sum();
+        res = G_f_normed * sum();
     }
 
     return res;

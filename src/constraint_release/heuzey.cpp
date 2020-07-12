@@ -7,9 +7,112 @@
 #include <algorithm>
 #include <cmath>
 
-Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, Time_series::time_type, double> heuzey_constraint_release_factory(constraint_release::impl::HEUZEY);
+Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context&> heuzey_constraint_release_factory(constraint_release::impl::HEUZEY);
 
-using namespace heuzey_constraint_release;
+using namespace heuzey_detail;
+
+HEU_constraint_release::HEU_constraint_release(double c_v, Context& ctx)
+: HEU_constraint_release(c_v, ctx.Z, ctx.tau_e, ctx.tau_df)
+{
+    ctx.attach_compute(this);
+}
+
+HEU_constraint_release::HEU_constraint_release(double c_v, double Z, double tau_e, double tau_df)
+: IConstraint_release{c_v}, Z_{Z}, tau_e_{tau_e}, tau_df_{tau_df}, model{get_model(Z_, tau_e_, tau_df_)}
+{}
+
+Time_series HEU_constraint_release::operator()(const Time_series::time_type& time_range)
+{
+    Time_series res{time_range};
+    
+    std::transform(exec_policy, time_range->begin(), time_range->end(), res.begin(), std::ref(*this));
+
+    if (Async_except::get()->ep)
+    {
+        std::rethrow_exception(Async_except::get()->ep);
+    }
+
+    return res;
+}
+
+Time_series::value_primitive HEU_constraint_release::operator()(const Time_series::time_primitive& t)
+{
+    double epsilon_0 = epsilon_zero(Z_, tau_e_);
+
+    return tau_e_*integral_result(epsilon_0, t);
+}
+
+void
+HEU_constraint_release::update(const Context& ctx)
+{
+    Z_ = ctx.Z; tau_e_ = ctx.tau_e; tau_df_ = ctx.tau_df; model = get_model(Z_, tau_e_, tau_df_);
+}
+
+// TODO: should really create a predicated factory for this
+HEU_constraint_release::Model_ptr
+HEU_constraint_release::get_model(double Z, double tau_e, double tau_df)
+{
+    Model_ptr ptr;
+
+    // Select model appropriate for chain length
+    if (Z <= 10.0)
+    {
+        ptr = std::make_unique<Short>(Z, tau_e, tau_df);
+    }
+    else if (Z > 10.0 and Z <= 160.0)
+    {
+        ptr = std::make_unique<Medium>(Z, tau_e, tau_df);
+    }
+    else if (Z > 160.0 and Z_ <= 360.0)
+    {
+        ptr = std::make_unique<Long>(Z, tau_e, tau_df);
+    }
+    else
+    {
+        ptr = std::make_unique<Extra_long>(Z, tau_e, tau_df);
+    }
+
+    return ptr;
+}
+
+double
+HEU_constraint_release::integral_result(double lower_bound, double t)
+{         
+    auto f = [this, t] (double epsilon) -> double {
+        return (*model)(epsilon)*std::exp(-epsilon*c_v_*t);
+    };
+
+    double res{0.0};
+
+    try
+    {
+        using namespace boost::math::quadrature;
+        exp_sinh<double> integrator;
+        double termination = std::sqrt(std::numeric_limits<double>::epsilon());
+        res = integrator.integrate(f, lower_bound, std::numeric_limits<double>::infinity(), termination, nullptr, nullptr, nullptr);
+    }
+    catch (const std::exception& ex)
+    {
+        Async_except::get()->ep = std::current_exception();
+        BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
+    }
+
+    return res;
+}
+
+// Equation 20, select lower bound for integration
+inline double
+HEU_constraint_release::epsilon_zero(double Z, double tau_e)
+{
+    if (Z < 25.0)
+    {
+        return 18.56*std::pow(Z, -4.664)/tau_e;
+    }
+    else // if (Z >= 25)
+    {
+        return 327.61*std::pow(Z, -5.602)/tau_e;
+    }
+}
 
 IModel::IModel(const double Z_, const double tau_e_, const double tau_df_)
 : Z{Z_}, tau_e{tau_e_}, tau_df{tau_df_}
@@ -141,95 +244,4 @@ Extra_long::Extra_long(const double Z_, const double tau_e_, const double tau_df
 : Long(Z_, tau_e_, tau_df_)
 {
     n = 0.393;
-}
-
-HEU_constraint_release::HEU_constraint_release(Time_series::time_type time_range, double c_v)
-: IConstraint_release{time_range, c_v}
-{}
-
-
-inline auto
-HEU_constraint_release::R_t_functional(double Z, double tau_e, double tau_df)
-{
-    using namespace heuzey_constraint_release;
-
-    // Select model appropriate for chain length
-    if (Z <= 10.0)
-    {
-        model = std::make_unique<Short>(Z, tau_e, tau_df);
-    }
-    else if (Z > 10.0 and Z <= 160.0)
-    {
-        model = std::make_unique<Medium>(Z, tau_e, tau_df);
-    }
-    else if (Z > 160.0 and Z <= 360.0)
-    {
-        model = std::make_unique<Long>(Z, tau_e, tau_df);
-    }
-    else
-    {
-        model = std::make_unique<Extra_long>(Z, tau_e, tau_df);
-    }
-
-    double epsilon_0 = epsilon_zero(Z, tau_e);
-
-    return [=](double t) -> double {
-        return tau_e*integral_result(epsilon_0, t);
-    };
-}
-
-Time_series_functional::functional_type
-HEU_constraint_release::time_functional(const Context& ctx)
-{
-    return R_t_functional(ctx.Z, ctx.tau_e, ctx.tau_df);
-}
-
-void
-HEU_constraint_release::update(const Context& ctx)
-{
-    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(), R_t_functional(ctx.Z, ctx.tau_e, ctx.tau_df));
-
-    if (Async_except::get()->ep)
-    {
-        std::rethrow_exception(Async_except::get()->ep);
-    }
-}
-
-double
-HEU_constraint_release::integral_result(double lower_bound, double t)
-{         
-    auto f = [this, t] (double epsilon) -> double {
-        return (*model)(epsilon)*std::exp(-epsilon*c_v_*t);
-    };
-
-    double res{0.0};
-
-    try
-    {
-        using namespace boost::math::quadrature;
-        exp_sinh<double> integrator;
-        double termination = std::sqrt(std::numeric_limits<double>::epsilon());
-        res = integrator.integrate(f, lower_bound, std::numeric_limits<double>::infinity(), termination, nullptr, nullptr, nullptr);
-    }
-    catch (const std::exception& ex)
-    {
-        Async_except::get()->ep = std::current_exception();
-        BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
-    }
-
-    return res;
-}
-
-// Equation 20, select lower bound for integration
-inline double
-HEU_constraint_release::epsilon_zero(double Z, double tau_e)
-{
-    if (Z < 25.0)
-    {
-        return 18.56*std::pow(Z, -4.664)/tau_e;
-    }
-    else // if (Z >= 25)
-    {
-        return 327.61*std::pow(Z, -5.602)/tau_e;
-    }
 }
