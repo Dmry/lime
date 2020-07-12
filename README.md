@@ -3,6 +3,7 @@
 # lime
 Tool for the application of Likhtman&amp; McLeish' reptation theory under active development.
 
+Currently only compiles on linux. Windows users should use the Docker version.
 
 ## Requirements
 
@@ -10,3 +11,13 @@ Tool for the application of Likhtman&amp; McLeish' reptation theory under active
 * C++17 with parallel algorithms (GCC >= 9)
 * GNU Scientific Library >= 2.4
 * Intel-tbb >= 2018
+
+## Compiling from source
+
+```
+git clone https://github.com/Dmry/lime.git
+mkdir lime/build && cd "$_"
+cmake ..
+make lime
+make install
+```
