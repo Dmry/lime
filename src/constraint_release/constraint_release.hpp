@@ -29,5 +29,4 @@ namespace constraint_release
     };
 
     typedef Factory_template<IConstraint_release, impl, double, Context&> Factory_with_context;
-    typedef Factory_template<IConstraint_release, impl, double> Factory;
 }

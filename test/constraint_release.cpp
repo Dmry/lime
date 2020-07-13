@@ -90,12 +90,12 @@ BOOST_AUTO_TEST_CASE(
 {
     std::array<constraint_release::impl, 2> impls{constraint_release::impl::HEUZEY, constraint_release::impl::RUBINSTEINCOLBY};
 
-    auto time_range = Time_range::generate_exponential(1.2, 1000);
+    Context ctx;
 
     for (auto impl : impls)
     {
         BOOST_TEST_INFO(impl);
-        auto CR = constraint_release::Factory::create(impl, 0.1);
+        auto CR = constraint_release::Factory_with_context::create(impl, 0.1, ctx);
         BOOST_CHECK( CR );
     }
 }

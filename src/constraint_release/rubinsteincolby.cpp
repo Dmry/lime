@@ -99,34 +99,25 @@ RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e,
 double
 RUB_constraint_release::Me(double epsilon) const
 {
-    double sum{0.0};
+    size_t sum{0};
     size_t realization_size{static_cast<size_t>(Z_)};
+    double s{0};
 
     for (size_t j = 0 ; j < realizations_ ; ++j)
     {
-        size_t stride = j * realization_size;
+        const size_t stride = j * realization_size;
 
-        // Si needs to be local to avoid race conditions.
-        std::vector<double> Si(realization_size-1);
+        s = km[0+stride] + km[1+stride] - epsilon;
+        if (s < 0.0) ++sum;
 
-        Si[0] = km[0+stride] + km[1+stride] - epsilon;
-
-        // Race condition alert! No parallel execution here
-        for (size_t i = 1+stride, s = 1 ; i < stride+Si.size() ; ++i, ++s)
-            Si[s] = km[i] + km[i+1] - epsilon - square(km[i]) / Si[s-1];
-
-        // par_unseq count_if is horrendously slow on the test system.
-        // Using sequential execution for robustness (wrt speed) with
-        // virtually no performance penalty.
-        auto count = std::count_if(std::execution::seq, Si.begin(), Si.end(), [](const double& si) {return si < 0;});
-
-        if (count > 0)
+        for (size_t i = 1+stride; i < stride+realization_size-1 ; ++i)
         {
-            sum += static_cast<double>(count);
+            s = km[i] + km[i+1] - epsilon - square(km[i])/s;
+            if (s < 0.0) ++sum;
         }
     }
 
-    return sum / static_cast<double>(km.size());
+    return static_cast<double>(sum) / static_cast<double>(km.size());
 }
 
 double

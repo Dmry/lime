@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ics VERSION 0.1 LANGUAGES CXX)
+project(lime VERSION 0.1 LANGUAGES CXX)
 
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED on)
@@ -23,7 +23,7 @@ add_definitions(-DBOOST_LOG_DYN_LINK)
 
 set(CMAKE_CXX_FLAGS "-O3 -march=native -pipe -Wall -Wextra -Wfloat-conversion")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -march=native -pipe -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -pipe -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=znver1 -pipe")
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 

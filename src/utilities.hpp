@@ -63,7 +63,7 @@ std::ostream& operator<< (std::ostream &out, const sigmoid_wrapper<T>& sigmoid)
 }
 
 template<typename T>
-T
+inline T
 square(const T& param)
 {
     return param*param;
