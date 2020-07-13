@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/math/differentiation/finite_difference.hpp>
+
 #include "time_series.hpp"
 #include "parallel_policy.hpp"
 
@@ -46,6 +48,32 @@ T NRMSE_average(const std::vector<T>& fit, const std::vector<T>& original)
     return rmse / avg;
 }
 
+template<typename Functor_t>
+Time_series derivative(const Functor_t& func, const Time_series::time_type& time_range)
+{
+    using namespace boost::math::differentiation;
 
+    Time_series result(time_range);
 
-Time_series derivative(Time_series_functional::functional_type functional, Time_series_functional::time_type time_range);
+    std::transform(exec_policy, time_range->begin(), time_range->end(), result.begin(), [&func](const Time_series::time_primitive& t)
+    {
+        return finite_difference_derivative<Functor_t, Time_series::time_primitive, 8>(func, t);
+    });
+
+    return result;
+}
+
+template<typename Functor_t>
+Time_series dimensionless_derivative(const Functor_t& func, const Time_series::time_type& time_range, std::shared_ptr<Context> ctx)
+{
+    auto derivative_result = derivative(func, time_range);
+
+    std::for_each(exec_policy, derivative_result.time_zipped_begin(), derivative_result.time_zipped_end(), [ctx](auto val) mutable -> double {
+        double& time = boost::get<0>(val);
+        double& value = boost::get<1>(val);
+                
+        return value *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(time, 0.75);
+    });
+
+    return derivative_result;
+}

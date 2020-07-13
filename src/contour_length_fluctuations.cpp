@@ -21,7 +21,7 @@ Contour_length_fluctuations::Contour_length_fluctuations(Context& ctx)
     ctx.attach_compute(this);
 }
 
-Time_series Contour_length_fluctuations::operator()(const Time_series::time_type& time_range)
+Time_series Contour_length_fluctuations::operator()(const Time_series::time_type& time_range) const
 {
     Time_series res{time_range};
 
@@ -35,17 +35,15 @@ Time_series Contour_length_fluctuations::operator()(const Time_series::time_type
     return res;
 }
 
-Time_series::value_primitive Contour_length_fluctuations::operator()(const Time_series::time_primitive& t)
+Time_series::value_primitive Contour_length_fluctuations::operator()(const Time_series::time_primitive& t) const
 {
-    Summation<double> sum{1.0, p_star_, 2.0};
-
-    auto f = [&](const double& p){return 1.0/square(p) * exp( -t*square(p)/tau_df_ );};
+    Summation<double> sum{1.0, p_star_, 2.0, [&](const double& p){return 1.0/square(p) * exp( -t*square(p)/tau_df_ );}};
 
     const double integ = integral_result(e_star_, t);
 
     const double res = (integ*0.306)/(Z_*std::pow(tau_e_, 0.25));
 
-    return G_f_normed_* sum(f) + res;
+    return G_f_normed_* sum() + res;
 };
 
 void
@@ -57,11 +55,9 @@ Contour_length_fluctuations::update(const Context& ctx)
 double
 Contour_length_fluctuations::e_star(double Z, double tau_e, double G_f_normed)
 {
-    Summation<double> sum{1.0, std::sqrt(Z/10.0), 2.0};
+    Summation<double> sum{1.0, std::sqrt(Z/10.0), 2.0, [](const double& p) -> double {return 1.0/square(p);}};
 
-    constexpr auto f = [](const double& p) -> double {return 1.0/square(p);};
-
-    return 1.0/(tau_e*std::pow(Z,4.0)) * std::pow((4.0*0.306 / (1.0-G_f_normed*sum(f)) ),4.0);
+    return 1.0/(tau_e*std::pow(Z,4.0)) * std::pow((4.0*0.306 / (1.0-G_f_normed*sum()) ),4.0);
 }
 
 double
@@ -83,7 +79,6 @@ Contour_length_fluctuations::integral_result(double lower_bound, double t)
     catch (const std::exception& ex)
     {
         Async_except::get()->ep = std::current_exception();
-        BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
     }
 
     return res;

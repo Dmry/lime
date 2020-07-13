@@ -17,10 +17,10 @@ struct Contour_length_fluctuations : public Time_functor, Compute
     Contour_length_fluctuations(const Contour_length_fluctuations&) = default;
 
     // Lower bound for integration
-    static double e_star(double Z, double tau_e, double Gf_normed);
+    static double e_star(double Z, double tau_e, double G_f_normeded);
 
-    Time_series operator()(const Time_series::time_type&) override;
-    Time_series::value_primitive operator()(const Time_series::time_primitive&) override;
+    Time_series operator()(const Time_series::time_type&) const override;
+    Time_series::value_primitive operator()(const Time_series::time_primitive&) const override;
 
     // Calcualte new values for mu_t;
     void update(const Context& ctx) override;

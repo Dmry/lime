@@ -32,9 +32,7 @@ jobs:
         - CC=/usr/bin/gcc-9
         - CXX=/usr/bin/g++-9
       script:
-        # Check versions of gcc, g++ and cmake
         - gcc -v && g++ -v && cmake --version
-
         - mkdir build && cd build
         - cmake ..
         - make lime
