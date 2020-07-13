@@ -5,6 +5,7 @@
 
 #define BOOST_TEST_MODULE test_integration
 #include <boost/test/unit_test.hpp>
+#include <boost/test/included/unit_test.hpp>
 
 #include "../src/constraint_release/constraint_release.hpp"
 #include "../src/constraint_release/heuzey.hpp"
@@ -15,41 +16,57 @@
 #include <array>
 #include <filesystem>
 #include <algorithm>
+#include <memory>
 
-BOOST_AUTO_TEST_CASE( lm_figure_six )
-{
-    std::array<constraint_release::impl, 2> impls{/* constraint_release::impl::HEUZEY,  */constraint_release::impl::RUBINSTEINCOLBY};
+struct Reproduction_context {
+	using path_impl_pair = std::pair<std::filesystem::path, constraint_release::impl>;
 
-    Time_series input = File_reader::get_file_contents("../validation/likhtmanmcleish/figure6_R.dat", 1);
+	Reproduction_context()
+	: ctx{std::make_shared<Context>()}
+	{
+		ctx->Z = 300;
+		ctx->tau_e = 1;
 
-    std::shared_ptr<Context> ctx = std::make_shared<Context>();
-    ctx->Z = 300;
-    ctx->tau_e = 1;
+		CLF_context_builder builder(ctx);
+    	builder.gather_physics();
 
-    CLF_context_builder builder(ctx);
-    builder.gather_physics();
+    	ctx = builder.get_context();
+    	ctx->apply_physics();
+	}
 
-    ctx = builder.get_context();
-    ctx->apply_physics();
+	~Reproduction_context()
+	{ BOOST_TEST_MESSAGE( "teardown fixture" ); }
 
-    for (auto& impl : impls)
-    {
-        auto CR = constraint_release::Factory_with_context::create(impl, 0.1, *ctx);
+	void check_impl(std::filesystem::path path, constraint_release::impl impl)
+	{
+		Time_series input = File_reader::get_file_contents(path, 1);
+
+        auto CR = constraint_release::Factory_with_context::create(impl, 1.0, *ctx);
 
         auto wrapper = [&CR](const Time_series::value_primitive& t) {return (*CR)(t);};
 
-        Time_series series = derivative(wrapper, input.get_time_range());
+        Time_series series = dimensionless_derivative(wrapper, input.get_time_range(), ctx);
 
-        std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [&ctx] (auto val) mutable -> double {
-            double& time = boost::get<0>(val);
-            double& value = boost::get<1>(val);
-
-            return value *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(time, 0.75);
-        });
+        auto vals = series.get_values();
+        auto inputs = input.get_values();
 
         for (size_t i{0} ; i < series.size() ; ++i)
         {
-            BOOST_CHECK_CLOSE(*(series.begin()+i), *(input.begin()+i), 1.0);
+            BOOST_TEST_INFO("index: " << i);
+            BOOST_CHECK_CLOSE(vals[i], inputs[i], 8.0);
         }
-    }
+	}
+
+	std::shared_ptr<Context> ctx;
+};
+
+
+BOOST_FIXTURE_TEST_CASE( lm_figure_six, Reproduction_context )
+{
+    check_impl("../validation/likhtmanmcleish/figure6_R.dat", constraint_release::impl::RUBINSTEINCOLBY);
+}
+
+BOOST_FIXTURE_TEST_CASE( heuzey_figure_five, Reproduction_context )
+{
+	check_impl("../validation/heuzey/figure5_R.dat", constraint_release::impl::HEUZEY);
 }
