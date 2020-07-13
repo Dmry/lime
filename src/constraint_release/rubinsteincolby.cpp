@@ -72,7 +72,7 @@ RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e,
     std::generate(km.begin(), km.end(), [this] (){ return dist(prng); });
 
     // minimize function depending on the random input
-    auto minimize_functor = [&] (const double& rand_) {
+    auto minimize_functor = [&] (double& rand_) {
         using namespace boost::math::tools; // For bracket_and_solve_root.
 
         auto f = [&](double epsilon_){return cp(G_f_normed, tau_df, tau_e, p_star, e_star, Z, epsilon_) -  rand_;};
@@ -90,7 +90,7 @@ RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e,
             //BOOST_LOG_TRIVIAL(debug) << ex.what();
         }
         
-        return (r.first + (r.second - r.first) / 2.0);
+        rand_ = (r.first + (r.second - r.first) / 2.0);
     };
 
     std::for_each(exec_policy, km.begin(), km.end(), minimize_functor);
