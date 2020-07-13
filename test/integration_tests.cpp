@@ -35,7 +35,7 @@ struct Reproduction_context {
 	}
 
 	~Reproduction_context()
-	{ BOOST_TEST_MESSAGE( "teardown fixture" ); }
+	{}
 
 	void check_impl(std::filesystem::path path, constraint_release::impl impl)
 	{
