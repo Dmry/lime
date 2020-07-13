@@ -8,7 +8,7 @@ list(REMOVE_ITEM src ${lime_SOURCE_DIR}/lime.cpp)
 include_directories(${lime_SOURCE_DIR}/inc)
 include_directories(${Boost_INCLUDE_DIR})
 
-add_executable(lime_test ${src} ${cr_src} integration_tests.cpp)
+add_executable(lime_test ${src} ${cr_src} constraint_release.cpp)
 
 target_link_libraries(lime_test -lm tbb ${Boost_LIBRARIES} Boost::boost GSL::gsl stdc++ Boost::unit_test_framework)
 
