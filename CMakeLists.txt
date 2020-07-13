@@ -21,7 +21,7 @@ endif()
 
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
-set(CMAKE_CXX_FLAGS "-O3 -march=native -pipe -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "-O3 -march=native -pipe -Wall -Wextra -Wfloat-conversion")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -march=native -pipe -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -pipe -Wall -Wextra")
 

@@ -18,7 +18,7 @@ struct Time_range
 
     static Time_range::type generate_exponential(primitive base, primitive max)
     {
-        Time_range::type time = Time_range::construct(log_with_base<primitive>(base, max));
+        Time_range::type time = Time_range::construct(static_cast<size_t>(log_with_base<primitive>(base, max)));
 
         std::generate(time->begin(), time->end(), [n=0, base] () mutable {return std::pow(base, n++);});
 
