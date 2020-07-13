@@ -88,18 +88,18 @@ struct HEU_constraint_release : public IConstraint_release
   public:
     HEU_constraint_release(double c_v, Context& ctx);
     HEU_constraint_release(double c_v, double Z, double tau_e, double tau_df);
-    HEU_constraint_release(const HEU_constraint_release&) = default;
+    HEU_constraint_release(const HEU_constraint_release&);
 
     auto R_t_functional(double Z, double tau_e, double tau_df);
 
-    Time_series operator()(const Time_series::time_type&) override;
-    Time_series::value_primitive operator()(const Time_series::time_primitive&) override;
+    Time_series operator()(const Time_series::time_type&) const override;
+    Time_series::value_primitive operator()(const Time_series::time_primitive&) const override;
     void update(const Context& ctx) override;
 
   private:
     // Equation 20, select lower bound for integration
-    double epsilon_zero(double Z, double tau_e);
-    double integral_result(double lower_bound, double t);
+    double epsilon_zero(double Z, double tau_e) const;
+    double integral_result(double lower_bound, double t) const;
     Model_ptr get_model(double Z, double tau_e, double tau_df);
 
     double Z_;

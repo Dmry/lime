@@ -21,7 +21,11 @@ HEU_constraint_release::HEU_constraint_release(double c_v, double Z, double tau_
 : IConstraint_release{c_v}, Z_{Z}, tau_e_{tau_e}, tau_df_{tau_df}, model{get_model(Z_, tau_e_, tau_df_)}
 {}
 
-Time_series HEU_constraint_release::operator()(const Time_series::time_type& time_range)
+HEU_constraint_release::HEU_constraint_release(const HEU_constraint_release& other)
+: IConstraint_release{other.c_v_}, Z_{other.Z_}, tau_e_{other.tau_e_}, tau_df_{other.tau_df_}, model{get_model(other.Z_, other.tau_e_, other.tau_df_)}
+{}
+
+Time_series HEU_constraint_release::operator()(const Time_series::time_type& time_range) const
 {
     Time_series res{time_range};
     
@@ -35,7 +39,7 @@ Time_series HEU_constraint_release::operator()(const Time_series::time_type& tim
     return res;
 }
 
-Time_series::value_primitive HEU_constraint_release::operator()(const Time_series::time_primitive& t)
+Time_series::value_primitive HEU_constraint_release::operator()(const Time_series::time_primitive& t) const
 {
     double epsilon_0 = epsilon_zero(Z_, tau_e_);
 
@@ -76,7 +80,7 @@ HEU_constraint_release::get_model(double Z, double tau_e, double tau_df)
 }
 
 double
-HEU_constraint_release::integral_result(double lower_bound, double t)
+HEU_constraint_release::integral_result(double lower_bound, double t) const
 {         
     auto f = [this, t] (double epsilon) -> double {
         return (*model)(epsilon)*std::exp(-epsilon*c_v_*t);
@@ -94,7 +98,6 @@ HEU_constraint_release::integral_result(double lower_bound, double t)
     catch (const std::exception& ex)
     {
         Async_except::get()->ep = std::current_exception();
-        BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
     }
 
     return res;
@@ -102,7 +105,7 @@ HEU_constraint_release::integral_result(double lower_bound, double t)
 
 // Equation 20, select lower bound for integration
 inline double
-HEU_constraint_release::epsilon_zero(double Z, double tau_e)
+HEU_constraint_release::epsilon_zero(double Z, double tau_e) const
 {
     if (Z < 25.0)
     {

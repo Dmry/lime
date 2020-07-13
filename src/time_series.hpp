@@ -99,11 +99,13 @@ struct Time_series
 
 struct Time_functor
 {
+    using function_t = std::function<Time_series::value_primitive(Time_series::time_primitive)>;
+
     Time_functor()
     {}
 
-    virtual Time_series operator()(const Time_series::time_type&) = 0;
-    virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) = 0;
+    virtual Time_series operator()(const Time_series::time_type&) const = 0;
+    virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) const = 0;
 };
 
 struct Time_series_functional : public Time_series

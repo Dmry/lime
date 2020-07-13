@@ -13,8 +13,8 @@ struct RUB_constraint_release : public IConstraint_release
     RUB_constraint_release(double c_v, Context& ctx, size_t realizations_ = 1000);
     RUB_constraint_release(double c_v, double Z, double tau_e, double G_f_normed, double tau_df, size_t realizations = 1000);
     void update(const Context& ctx) override;
-    Time_series operator()(const Time_series::time_type&) override;
-    Time_series::value_primitive operator()(const Time_series::time_primitive&) override;
+    Time_series operator()(const Time_series::time_type&) const override;
+    Time_series::value_primitive operator()(const Time_series::time_primitive&) const override;
 
   private:
     double cp(double G_f_normed, double tau_df, double tau_e, double p_star, double e_star, double epsilon, double e_start);
@@ -23,8 +23,8 @@ struct RUB_constraint_release : public IConstraint_release
     double cp_two(double Z, double tau_e, double e_star, double epsilon);
     double e_star(double Z, double tau_e, double G_f_normed);
 
-    double Me(double epsilon);
-    double integral_result(double t);
+    double Me(double epsilon) const;
+    double integral_result(double t) const;
 
     double Z_;
     double tau_e_;

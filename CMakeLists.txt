@@ -4,6 +4,8 @@ project(ics VERSION 0.1 LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED on)
 
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/inc)
+
 find_package(TBB)
 find_package(Threads)
 find_package(GSL REQUIRED)

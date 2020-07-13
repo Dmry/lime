@@ -21,7 +21,7 @@ Contour_length_fluctuations::Contour_length_fluctuations(Context& ctx)
     ctx.attach_compute(this);
 }
 
-Time_series Contour_length_fluctuations::operator()(const Time_series::time_type& time_range)
+Time_series Contour_length_fluctuations::operator()(const Time_series::time_type& time_range) const
 {
     Time_series res{time_range};
 
@@ -35,7 +35,7 @@ Time_series Contour_length_fluctuations::operator()(const Time_series::time_type
     return res;
 }
 
-Time_series::value_primitive Contour_length_fluctuations::operator()(const Time_series::time_primitive& t)
+Time_series::value_primitive Contour_length_fluctuations::operator()(const Time_series::time_primitive& t) const
 {
     Summation<double> sum{1.0, p_star_, 2.0, [&](const double& p){return 1.0/square(p) * exp( -t*square(p)/tau_df_ );}};
 
@@ -79,7 +79,6 @@ Contour_length_fluctuations::integral_result(double lower_bound, double t)
     catch (const std::exception& ex)
     {
         Async_except::get()->ep = std::current_exception();
-        BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
     }
 
     return res;

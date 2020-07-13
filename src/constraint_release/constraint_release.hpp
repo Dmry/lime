@@ -13,8 +13,8 @@ struct IConstraint_release : public Time_functor, public Compute
         c_v_{c_v}
     {};
 
-    virtual Time_series operator()(const Time_series::time_type&) = 0;
-    virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) = 0;
+    virtual Time_series operator()(const Time_series::time_type&) const = 0;
+    virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) const = 0;
     
     virtual void update(const Context& ctx) = 0;
     double c_v_;

@@ -4,7 +4,7 @@ import qdarkgraystyle
 import csv
 import os
 import subprocess
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import *
 from PyQt5 import QtCore
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas

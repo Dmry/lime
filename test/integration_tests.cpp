@@ -7,25 +7,20 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../src/constraint_release/constraint_release.hpp"
+#include "../src/constraint_release/heuzey.hpp"
 #include "../src/time_series.hpp"
-#include "../src/parse.hpp"
-#include "../src/utilities.hpp"
+#include "../src/file_reader.hpp"
+#include "../src/postprocess.hpp"
 
 #include <array>
 #include <filesystem>
-
-struct ics_file_format : file_format<ics_file_format>
-{
-    ics_file_format()
-    {
-        eol = "\r\n";
-        delims = " ,";
-    }
-};
+#include <algorithm>
 
 BOOST_AUTO_TEST_CASE( lm_figure_six )
 {
-    std::array<constraint_release::impl, 2> impls{constraint_release::impl::HEUZEY, constraint_release::impl::RUBINSTEINCOLBY};
+    std::array<constraint_release::impl, 2> impls{/* constraint_release::impl::HEUZEY,  */constraint_release::impl::RUBINSTEINCOLBY};
+
+    Time_series input = File_reader::get_file_contents("../validation/likhtmanmcleish/figure6_R.dat", 1);
 
     std::shared_ptr<Context> ctx = std::make_shared<Context>();
     ctx->Z = 300;
@@ -37,20 +32,24 @@ BOOST_AUTO_TEST_CASE( lm_figure_six )
     ctx = builder.get_context();
     ctx->apply_physics();
 
-    for (auto& pair : list)
+    for (auto& impl : impls)
     {
-        BOOST_LOG_TRIVIAL(info) << "Computing " << pair.first << "...";
-        writer.path.replace_filename(pair.first + "_" + original_filename);
+        auto CR = constraint_release::Factory_with_context::create(impl, 0.1, *ctx);
 
-        Time_series series = derivative(*pair.second, normalized_time);
+        auto wrapper = [&CR](const Time_series::value_primitive& t) {return (*CR)(t);};
 
-        std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [this](auto val) mutable -> double {
+        Time_series series = derivative(wrapper, input.get_time_range());
+
+        std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [&ctx] (auto val) mutable -> double {
             double& time = boost::get<0>(val);
             double& value = boost::get<1>(val);
-            
+
             return value *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(time, 0.75);
         });
 
-        writer.write(*series.get_time_range(), series.get_values());
+        for (size_t i{0} ; i < series.size() ; ++i)
+        {
+            BOOST_CHECK_CLOSE(*(series.begin()+i), *(input.begin()+i), 1.0);
+        }
     }
 }

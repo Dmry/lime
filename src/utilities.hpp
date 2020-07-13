@@ -75,24 +75,6 @@ T typesafe_voidptr_cast(void* data)
     return std::any_cast<T>(*static_cast<std::any*>(data));
 }
 
-struct File_reader
-{
-    static Time_series get_file_contents(std::filesystem::path path, size_t col)
-    {
-        Time_series::value_type value;
-        Time_series::time_type time;
-
-        auto file_contents = parse_file<ics_file_format, clear_comments, store_headers>(path);
-
-        value = Get<Time_series::value_primitive>::col(col, file_contents.out);
-        time = Time_range::convert(Get<double>::col(0, file_contents.out));
-
-        file_contents.buffer.clear();
-
-        return Time_series(time, value);
-    }
-}
-
 template<typename T>
 struct Summation
 {
@@ -108,7 +90,6 @@ struct Summation
         // Should really implement a comparison suitable for floating point numbers
         for(; p <= end; p += step)
             sum += func_(p);
-
 
         return sum;
     }

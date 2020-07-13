@@ -28,7 +28,7 @@ RUB_constraint_release::RUB_constraint_release(double c_v, double Z, double tau_
     generate(G_f_normed_, tau_df_, tau_e_, E_star, Z_);
 }
 
-Time_series RUB_constraint_release::operator()(const Time_series::time_type& time_range)
+Time_series RUB_constraint_release::operator()(const Time_series::time_type& time_range) const
 {
     Time_series res{time_range};
 
@@ -42,7 +42,7 @@ Time_series RUB_constraint_release::operator()(const Time_series::time_type& tim
     return res;
 }
 
-Time_series::value_primitive RUB_constraint_release::operator()(const Time_series::time_primitive& t)
+Time_series::value_primitive RUB_constraint_release::operator()(const Time_series::time_primitive& t) const
 {
     return integral_result(t);
 }
@@ -87,7 +87,7 @@ RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e,
         }
         catch(const std::exception& ex)
         {
-            BOOST_LOG_TRIVIAL(debug) << ex.what();
+            //BOOST_LOG_TRIVIAL(debug) << ex.what();
         }
         
         return (r.first + (r.second - r.first) / 2.0);
@@ -97,7 +97,7 @@ RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e,
 }
 
 double
-RUB_constraint_release::Me(double epsilon)
+RUB_constraint_release::Me(double epsilon) const
 {
     double sum{0.0};
     size_t realization_size{static_cast<size_t>(Z_)};
@@ -130,7 +130,7 @@ RUB_constraint_release::Me(double epsilon)
 }
 
 double
-RUB_constraint_release::integral_result(double t)
+RUB_constraint_release::integral_result(double t) const
 {   
     // Integration by parts
     auto f = [this, t] (double epsilon) -> double {
@@ -149,7 +149,6 @@ RUB_constraint_release::integral_result(double t)
     catch (const std::exception& ex)
     {
         Async_except::get()->ep = std::current_exception();
-        BOOST_LOG_TRIVIAL(debug) << "In CR: " << ex.what();
     }
 
     return res;

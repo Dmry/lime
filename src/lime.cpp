@@ -4,7 +4,7 @@
 
 #include "../inc/args.hpp"
 
-#include "parse.hpp"
+#include "file_reader.hpp"
 #include "contour_length_fluctuations.hpp"
 #include "constraint_release/heuzey.hpp"
 #include "constraint_release/rubinsteincolby.hpp"
@@ -21,15 +21,6 @@
 #include <filesystem>
 #include <algorithm>
 #include <tuple>
-
-struct ics_file_format : file_format<ics_file_format>
-{
-    ics_file_format()
-    {
-        eol = "\r\n";
-        delims = " ,";
-    }
-};
 
 struct lime : args::group<lime>
 {
@@ -126,7 +117,7 @@ struct cmd_takes_file_input
 
     Time_series get_file_contents()
     {
-        File_reader::get_file_contents(inpath, file_col);
+        return File_reader::get_file_contents(inpath, file_col);
     }
 };
 
@@ -303,7 +294,9 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file
             BOOST_LOG_TRIVIAL(info) << "Computing " << pair.first << "...";
             writer.path.replace_filename(pair.first + "_" + original_filename);
 
-            Time_series series = derivative(*pair.second, normalized_time);
+            auto wrapper = [&pair](const double& t) {return (*pair.second)(t);};
+
+            Time_series series = derivative(wrapper, normalized_time);
 
             std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [this](auto val) mutable -> double {
                 double& time = boost::get<0>(val);
