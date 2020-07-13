@@ -261,6 +261,7 @@ class ResultsBox(QTabWidget):
         for item in self.files.selectedItems():
             self.dataSets.remove(item)
             self.files.removeRow(item.row())
+            self.chart.plot()
 
     def removeVolatile(self):
         for file in self.dataSets:
