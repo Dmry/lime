@@ -62,3 +62,18 @@ Time_series derivative(const Functor_t& func, const Time_series::time_type& time
 
     return result;
 }
+
+template<typename Functor_t>
+Time_series dimensionless_derivative(const Functor_t& func, const Time_series::time_type& time_range, std::shared_ptr<Context> ctx)
+{
+    auto derivative_result = derivative(func, time_range);
+
+    std::for_each(exec_policy, derivative_result.time_zipped_begin(), derivative_result.time_zipped_end(), [ctx](auto val) mutable -> double {
+        double& time = boost::get<0>(val);
+        double& value = boost::get<1>(val);
+                
+        return value *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(time, 0.75);
+    });
+
+    return derivative_result;
+}

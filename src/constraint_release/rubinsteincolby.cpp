@@ -77,13 +77,13 @@ RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e,
 
         auto f = [&](double epsilon_){return cp(G_f_normed, tau_df, tau_e, p_star, e_star, Z, epsilon_) -  rand_;};
 
-        eps_tolerance<double> tol(std::numeric_limits<double>::digits - 2.0);
+        eps_tolerance<double> tol(std::numeric_limits<double>::digits);
 
         std::pair<double, double> r;
 
         try
         {
-            r = bisect(f, 0.0, 1e1, tol);
+            r = bisect(f, 0.0, 1e10, tol);
         }
         catch(const std::exception& ex)
         {

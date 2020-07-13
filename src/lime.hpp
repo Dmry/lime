@@ -321,36 +321,16 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file, cmd_takes_f
 
             auto wrapper = [&pair](const double& t) {return (*pair.second)(t);};
 
-            Time_series series = dimensionless_derivative(wrapper, input.get_time_range(), ctx);
+            Time_series series = derivative(wrapper, input.get_time_range());
+
+            std::for_each(exec_policy, series.time_zipped_begin(), series.time_zipped_end(), [this](auto val) mutable -> double {
+                double& time = boost::get<0>(val);
+                double& value = boost::get<1>(val);
+                
+                return value *= -4.0*ctx->Z*std::pow(ctx->tau_e, 0.25)*std::pow(time, 0.75);
+            });
 
             writer.write(*series.get_time_range(), series.get_values());
         }
     }
 };
-
-void ics_terminate() {
-    BOOST_LOG_TRIVIAL(error) << "Unhandled exception";
-    std::rethrow_exception(std::current_exception());
-//  abort();  // forces abnormal termination
-}
-
-int main(int argc, char const *argv[])
-{
-    namespace log = boost::log;
-    log::add_console_log(std::cout, log::keywords::format = lime_log::coloring_formatter);
-    log::core::get()->set_filter(log::trivial::severity >= log::trivial::info);
-
-    std::set_terminate (ics_terminate);
-
-    try
-    {
-        args::parse<lime>(argc, argv);
-    }
-    catch (const std::runtime_error& err)
-    {
-        BOOST_LOG_TRIVIAL(error) << err.what();
-        exit(1);
-    }
-
-    return 0;
-}

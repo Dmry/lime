@@ -80,17 +80,18 @@ struct Time_series
     auto time_zipped_end()   {return boost::make_zip_iterator(boost::make_tuple(time_range_->end(), values_.end()));}
 
     std::vector<value_primitive> operator()() {return values_;}
+    Time_series& operator=(const Time_series& other_time_series) noexcept {values_ = other_time_series.values_; time_range_=other_time_series.time_range_; return *this;}
 
     std::vector<value_primitive>::iterator begin() {return values_.begin();}
     std::vector<value_primitive>::iterator end() {return values_.end();}
 
-    std::vector<value_primitive>::const_iterator cbegin() {return values_.cbegin();}
-    std::vector<value_primitive>::const_iterator cend() {return values_.cend();}
+    std::vector<value_primitive>::const_iterator cbegin() const {return values_.cbegin();}
+    std::vector<value_primitive>::const_iterator cend() const {return values_.cend();}
 
-    size_t size() {return values_.size();}
+    size_t size() const {return values_.size();}
 
-    Time_series::time_type get_time_range() {return time_range_;}
-    Time_series::value_type get_values() {return values_;}
+    Time_series::time_type get_time_range() const {return time_range_;}
+    Time_series::value_type get_values() const {return values_;}
 
     protected:
         Time_series::time_type time_range_;
