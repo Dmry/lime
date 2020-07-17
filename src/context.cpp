@@ -6,6 +6,7 @@
 #include "context.hpp"
 #include "utilities.hpp"
 #include "tube.hpp"
+#include "checks.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -43,26 +44,6 @@ void Context::notify_computes()
             compute->update(*this);
         }
     }
-}
-
-struct check_nan_impl
-{
-    template<typename T>
-    void operator()(T& t) const
-    {
-        if (t != t)
-        {
-            throw std::runtime_error("Got NaN");
-        }
-    }
-};
-
-// Checks if any of the values in the context is NaN
-void Context::check_nan()
-{
-    using boost::phoenix::arg_names::arg1;
-
-    boost::fusion::for_each(*this, check_nan_impl());
 }
 
 // Prints name of every variable in the context and its current value
@@ -111,6 +92,21 @@ ICS_context_builder::ICS_context_builder(std::shared_ptr<struct System> system, 
 :   IContext_builder{context}, system_{system}
 {}
 
+BOOST_FUSION_ADAPT_STRUCT_NAMED(
+    Context, ICS_context_struct,
+    Z,
+    M_e,
+    N,
+    N_e,
+    G_f_normed,
+    tau_e,
+    tau_monomer,
+    G_e,
+    tau_r,
+    tau_d_0,
+    tau_df
+)
+
 void
 ICS_context_builder::gather_physics()
 {
@@ -129,18 +125,76 @@ ICS_context_builder::gather_physics()
     context_->add_physics_in_place<Tau_df>();
 }
 
-CLF_context_builder::CLF_context_builder()
+void
+ICS_context_builder::initialize()
+{
+    context_->apply_physics();
+}
+
+void
+ICS_context_builder::validate_state()
+{
+    using namespace boost::fusion::adapted;
+    using namespace checks;
+    using namespace checks::policies;
+
+    static std::string location("in ICS context builder");
+
+    try
+    {
+        check<ICS_context_struct, is_nan<throws>, zero<prints_error_append<location>>>(*context_);
+    }
+    catch (const std::exception& ex)
+    {
+        std::throw_with_nested(std::runtime_error(location));
+    }
+}
+
+Reproduction_context_builder::Reproduction_context_builder()
 :   IContext_builder{}
 {}
 
-CLF_context_builder::CLF_context_builder(std::shared_ptr<Context> context)
+Reproduction_context_builder::Reproduction_context_builder(std::shared_ptr<Context> context)
 :   IContext_builder{context}
 {}
 
+BOOST_FUSION_ADAPT_STRUCT_NAMED(
+    Context, Reproduction_context_struct,
+    Z,
+    tau_e,
+    N,
+    G_f_normed,
+    tau_d_0,
+    tau_df
+);
+
 void
-CLF_context_builder::gather_physics()
+Reproduction_context_builder::gather_physics()
 {
     context_->add_physics_in_place<G_f_normed>();
     context_->add_physics_in_place<Tau_d_0>();
     context_->add_physics_in_place<Tau_df>();
+}
+
+void
+Reproduction_context_builder::initialize()
+{
+    context_->apply_physics();
+}
+
+void
+Reproduction_context_builder::validate_state()
+{
+    using namespace boost::fusion::adapted;
+    using namespace checks;
+    using namespace checks::policies;
+
+    try
+    {
+        check<ICS_context_struct, is_nan<throws>, zero<throws>>(*context_);
+    }
+    catch (const std::exception& ex)
+    {
+        std::throw_with_nested(std::runtime_error("in ICS context builder"));
+    }
 }

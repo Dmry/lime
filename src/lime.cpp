@@ -17,12 +17,15 @@
 #include "fit.hpp"
 #include "postprocess.hpp"
 
-#include <list>
+#include <unordered_map>
 #include <filesystem>
 #include <algorithm>
 #include <tuple>
 #include <numeric>
 #include <cmath>
+
+static Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context&> rubinstein_constraint_release_factory(constraint_release::impl::RUBINSTEINCOLBY);
+static Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context&> heuzey_constraint_release_factory(constraint_release::impl::HEUZEY);
 
 struct lime : args::group<lime>
 {
@@ -96,7 +99,6 @@ struct result_cmd
         ICS_result driver(time, builder.get(), CR_impl);
 
         driver.CR->c_v_ = c_v;
-        driver.context_->apply_physics();
 
         return driver;
     }
@@ -105,9 +107,7 @@ struct result_cmd
 struct cmd_generates_exponential_timescale
 {
     cmd_generates_exponential_timescale() : base{1.2}
-    {
-
-    }
+    {}
 
     double max_t;
     double base;
@@ -116,7 +116,7 @@ struct cmd_generates_exponential_timescale
     void parse(F f)
     {
         auto check_base = [](auto&& data, const auto&, const args::argument&) {
-            if ( std::abs(data - 1.0) < std::numeric_limits<double>::epsilon )
+            if ( std::abs(data - 1.0) < std::numeric_limits<double>::epsilon() )
             {
                 throw std::runtime_error("Please enter a value other than 1.0 for flag base");
             }
@@ -148,12 +148,9 @@ struct cmd_takes_file_input
     }
 };
 
-struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd
+struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd, cmd_generates_exponential_timescale
 {
-    double base;
-    double max_t;
-    
-    generate() : base{1.2}
+    generate()
     {}
 
     static constexpr const char* help()
@@ -164,10 +161,9 @@ struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd
     template<class F>
     void parse(F f)
     {
+        cmd_generates_exponential_timescale::parse(f);
         result_cmd::parse(f);
         cmd_writes_output_file::parse(f);
-        f(max_t,    "-t", "--maxtime",                      args::help("Maximum timestep for calculation"),              args::required());
-        f(base,     "-b", "--base",                         args::help("Exponential growthfactor between steps")                         );
     }
 
     void run()
@@ -176,11 +172,12 @@ struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd
 
         Time_range::type time = Time_range::generate_exponential(base, max_t);
 
-        ICS_result driver = build_driver(time);
+        ICS_result result = build_driver(time);
 
-        driver.context_->print();
+        result.context_->print();
+        result.calculate();
 
-        writer.write(*time, driver.result());
+        writer.write(*result.get_time_range(), result.get_values());
     }
 };
 
@@ -212,21 +209,21 @@ struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
     {
         auto input = get_file_contents();
 
-        ICS_result driver = build_driver(input.get_time_range());
+        ICS_result result = build_driver(input.get_time_range());
 
-        auto res = driver.result();
+        result.calculate();
 
         if (rmse)
         {
-            BOOST_LOG_TRIVIAL(info) << "RMSE: " << RMSE<Time_series::value_primitive>(res, input.get_values());
+            BOOST_LOG_TRIVIAL(info) << "RMSE: " << RMSE<Time_series::value_primitive>(result.get_values(), input.get_values());
         }
         if (narmse)
         {
-            BOOST_LOG_TRIVIAL(info) << "NRMSE (by average): " << NRMSE_average<Time_series::value_primitive>(res, input.get_values());
+            BOOST_LOG_TRIVIAL(info) << "NRMSE (by average): " << NRMSE_average<Time_series::value_primitive>(result.get_values(), input.get_values());
         }
         if (nrrmse)
         {
-            BOOST_LOG_TRIVIAL(info) << "NRMSE (by range): " << NRMSE_range<Time_series::value_primitive>(res, input.get_values());
+            BOOST_LOG_TRIVIAL(info) << "NRMSE (by range): " << NRMSE_range<Time_series::value_primitive>(result.get_values(), input.get_values());
         }
     }
 };
@@ -257,19 +254,16 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
     {
         auto input = get_file_contents();
 
-        auto driver = build_driver(input.get_time_range());
+        auto result = build_driver(input.get_time_range());
 
-        Fit<double, double> fit(driver.context_->N_e, driver.context_->tau_monomer);
+        Fit<double, double> fit(result.context_->N_e, result.context_->tau_monomer);
 
-        fit.fit(input.get_values(), driver, wt_pow);
+        fit.fit(input.get_values(), result, wt_pow);
 
-        auto res = driver.result();
+        result.context_->print();
+        BOOST_LOG_TRIVIAL(info) << "cv: " << result.CR->c_v_;
 
-        driver.context_->print();
-
-        BOOST_LOG_TRIVIAL(info) << "cv: " << driver.CR->c_v_;
-
-        writer.write(*input.get_time_range(), res);
+        writer.write(*result.get_time_range(), result.get_values());
     }
 };
 
@@ -278,8 +272,7 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file, cmd_takes_f
     std::shared_ptr<Context> ctx;
     double c_v;
 
-    using list_pair = std::pair<std::string, Time_functor*>;
-    std::list<list_pair> list;
+    std::unordered_map<std::string, Time_functor*> list;
 
     reproduce() : ctx{std::make_shared<Context>()}
     {}
@@ -295,35 +288,29 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file, cmd_takes_f
         f(c_v,          "-c", "--cv",                       args::help("Constraint release parameter"),                         args::required());
         f(ctx->Z,       "-Z", "--entanglementno",           args::help("Number of entanglements"),                              args::required());
         f(ctx->tau_e,   "-e", "--entanglementtime",         args::help("Entanglement time"),                                    args::required());
-        f(nullptr,       "--dmu",                         args::help("Reproduce dimensionless derivative of mu (figure 2)."),  args::lazy_callback(  [this](auto&&, auto&, auto&){list.push_back(list_pair("du", new Contour_length_fluctuations(*ctx)));}) );
-        f(nullptr,       "--drrub",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Colby's method (figure 6)."),  args::lazy_callback(  [this](auto&&, auto&, auto&){list.push_back(list_pair("dr_rub", new RUB_constraint_release(c_v, *ctx)));}) );
-        f(nullptr,       "--drheu",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Heuzey's method (figure 6)."),  args::lazy_callback(  [this](auto&&, auto&, auto&){list.push_back(list_pair("dr_heu", new HEU_constraint_release(c_v, *ctx)));}) );
+        f(nullptr,       "--dmu",                         args::help("Reproduce dimensionless derivative of mu (figure 2)."),  args::lazy_callback(  [this](auto&&, auto&, auto&){list["du"] = new Contour_length_fluctuations(*ctx);}) );
+        f(nullptr,       "--drrub",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Colby's method (figure 6)."),  args::lazy_callback([this](auto&&, auto&, auto&){list["dr_rub"] = new RUB_constraint_release(c_v, *ctx);}) );
+        f(nullptr,       "--drheu",                       args::help("Reproduce dimensionless derivative of R using Rubinstein and Heuzey's method (figure 6)."),  args::lazy_callback([this](auto&&, auto&, auto&){list["dr_heu"] = new HEU_constraint_release(c_v, *ctx);}) );
         cmd_takes_file_input::parse(f);
         cmd_writes_output_file::parse(f);
     } 
 
     void run()
     {
-        CLF_context_builder builder(ctx);
-        builder.gather_physics();
-
-        ctx = builder.get_context();
-        ctx->apply_physics();
-
         auto input = get_file_contents();
-
         auto original_filename = writer.path.filename().string();
+
+        Reproduction_context_builder builder(ctx);
 
         for (auto& pair : list)
         {
             BOOST_LOG_TRIVIAL(info) << "Computing " << pair.first << "...";
+
+            Derivative_result derivative(input.get_time_range(), &builder, *pair.second);
+            derivative.calculate();
+
             writer.path.replace_filename(pair.first + "_" + original_filename);
-
-            auto wrapper = [&pair](const double& t) {return (*pair.second)(t);};
-
-            Time_series series = dimensionless_derivative(wrapper, input.get_time_range(), ctx);
-
-            writer.write(*series.get_time_range(), series.get_values());
+            writer.write(*derivative.get_time_range(), derivative.get_values());
         }
     }
 };
@@ -346,9 +333,9 @@ int main(int argc, char const *argv[])
     {
         args::parse<lime>(argc, argv);
     }
-    catch (const std::runtime_error& err)
+    catch (const std::exception& err)
     {
-        BOOST_LOG_TRIVIAL(error) << err.what();
+        lime_log::print_exception(err);
         exit(1);
     }
 

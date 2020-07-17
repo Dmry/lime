@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <cmath>
 
-Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context&> heuzey_constraint_release_factory(constraint_release::impl::HEUZEY);
-
 using namespace heuzey_detail;
 
 HEU_constraint_release::HEU_constraint_release(double c_v, Context& ctx)
@@ -18,11 +16,7 @@ HEU_constraint_release::HEU_constraint_release(double c_v, Context& ctx)
 }
 
 HEU_constraint_release::HEU_constraint_release(double c_v, double Z, double tau_e, double tau_df)
-: IConstraint_release{c_v}, Z_{Z}, tau_e_{tau_e}, tau_df_{tau_df}, model{get_model(Z_, tau_e_, tau_df_)}
-{}
-
-HEU_constraint_release::HEU_constraint_release(const HEU_constraint_release& other)
-: IConstraint_release{other.c_v_}, Z_{other.Z_}, tau_e_{other.tau_e_}, tau_df_{other.tau_df_}, model{get_model(other.Z_, other.tau_e_, other.tau_df_)}
+: IConstraint_release{c_v}, model_{get_model(Z, tau_e, tau_df)}, epsilon_zero_{epsilon_zero(Z, tau_e)}, tau_e_{tau_e}
 {}
 
 Time_series HEU_constraint_release::operator()(const Time_series::time_type& time_range) const
@@ -41,15 +35,15 @@ Time_series HEU_constraint_release::operator()(const Time_series::time_type& tim
 
 Time_series::value_primitive HEU_constraint_release::operator()(const Time_series::time_primitive& t) const
 {
-    double epsilon_0 = epsilon_zero(Z_, tau_e_);
-
-    return tau_e_*integral_result(epsilon_0, t);
+    return tau_e_*integral_result(epsilon_zero_, t);
 }
 
 void
 HEU_constraint_release::update(const Context& ctx)
 {
-    Z_ = ctx.Z; tau_e_ = ctx.tau_e; tau_df_ = ctx.tau_df; model = get_model(Z_, tau_e_, tau_df_);
+    tau_e_ = ctx.tau_e;
+    model_ = get_model(ctx.Z, ctx.tau_e, ctx.tau_df);
+    epsilon_zero_ = epsilon_zero(ctx.Z, ctx.tau_e);
 }
 
 // TODO: should really create a predicated factory for this
@@ -67,7 +61,7 @@ HEU_constraint_release::get_model(double Z, double tau_e, double tau_df)
     {
         ptr = std::make_unique<Medium>(Z, tau_e, tau_df);
     }
-    else if (Z > 160.0 and Z_ <= 360.0)
+    else if (Z > 160.0 and Z <= 360.0)
     {
         ptr = std::make_unique<Long>(Z, tau_e, tau_df);
     }
@@ -83,7 +77,7 @@ double
 HEU_constraint_release::integral_result(double lower_bound, double t) const
 {         
     auto f = [this, t] (double epsilon) -> double {
-        return (*model)(epsilon)*std::exp(-epsilon*c_v_*t);
+        return (*model_)(epsilon)*std::exp(-epsilon*c_v_*t);
     };
 
     double res{0.0};

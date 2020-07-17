@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <memory>
+#include <functional>
 
 struct Physics
 {
@@ -51,8 +52,6 @@ struct Context
         void attach_compute(struct Compute* compute);
         void attach_compute(std::vector<struct Compute*> computes);
 
-        void check_nan();
-
         void print();
 
     private:
@@ -75,6 +74,8 @@ class IContext_builder
         IContext_builder(std::shared_ptr<Context>);
 
         virtual void gather_physics() = 0;
+        virtual void initialize() = 0;
+        virtual void validate_state() = 0;
 
         void set_context(std::shared_ptr<Context>);
         std::shared_ptr<Context> get_context();
@@ -90,16 +91,20 @@ class ICS_context_builder : public IContext_builder
         ICS_context_builder(std::shared_ptr<struct System> sys, std::shared_ptr<Context>);
 
         void gather_physics() override;
+        void initialize() override;
+        void validate_state() override;
     
     protected:
         std::shared_ptr<System> system_;
 };
 
-class CLF_context_builder : public IContext_builder
+class Reproduction_context_builder : public IContext_builder
 {
     public:
-        CLF_context_builder();
-        CLF_context_builder(std::shared_ptr<Context>);
+        Reproduction_context_builder();
+        Reproduction_context_builder(std::shared_ptr<Context>);
 
         void gather_physics() override;
+        void initialize() override;
+        void validate_state() override;
 };

@@ -37,38 +37,8 @@ info_or_warn(const std::string& description, const T& var, F pred)
     }
 }
 
-struct lime_log
+namespace lime_log
 {
-    static void coloring_formatter(boost::log::record_view const& rec, boost::log::formatting_ostream& strm)
-    {
-        auto severity = rec.attribute_values()["Severity"].extract<boost::log::trivial::severity_level>();
-        if (severity)
-        {
-            // Set the color
-            switch (severity.get())
-            {
-            case boost::log::trivial::info:
-                strm << "\033[32m";
-                break;
-            case boost::log::trivial::warning:
-                strm << "\033[33m";
-                break;
-            case boost::log::trivial::error:
-            case boost::log::trivial::fatal:
-                strm << "\033[31m";
-                break;
-            default:
-                break;
-            }
-        }
-
-        // Format the message here...
-        strm << rec[boost::log::expressions::smessage];
-
-        if (severity)
-        {
-            // Restore the default color
-            strm << "\033[0m";
-        }
-    }
-};
+    void print_exception(const std::exception& e, int level =  0);  
+    void coloring_formatter(boost::log::record_view const& rec, boost::log::formatting_ostream& strm);
+}

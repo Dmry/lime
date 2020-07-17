@@ -14,17 +14,6 @@ static constexpr double gas_constant = 1; // m^2 kg s^-2 K^-1 mol^-1
 static constexpr double k_B = 1;          // J K^-1
 static constexpr double T_static = 1;     // K
 
-/* template<typename... T>
-void
-check_nan_impl(T... x)
-{
-    if ( ((x != x), ...) )
-    {
-        throw std::runtime_error("Got NaN");
-	}
-}
- */
-
 template<typename T>
 T log_with_base(T base, T x)
 {
@@ -75,21 +64,21 @@ T typesafe_voidptr_cast(void* data)
     return std::any_cast<T>(*static_cast<std::any*>(data));
 }
 
-template<typename T>
+template<typename T, typename... user_data_t>
 struct Summation
 {
-    using sum_func_t = std::function<T(const T&)>;
+    using sum_func_t = std::function<T(const T&, const user_data_t&...)>;
 
     Summation(T start_, T end_, T step_, sum_func_t func) : start{start_}, end{end_}, step{step_}, func_{func} {}
 
-    T operator() ()
+    T operator() (const user_data_t&... dat) const
     {
         T sum {0};
         T p {start};
 
         // Should really implement a comparison suitable for floating point numbers
         for(; p <= end; p += step)
-            sum += func_(p);
+            sum += func_(p, dat...);
 
         return sum;
     }

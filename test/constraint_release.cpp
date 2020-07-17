@@ -9,6 +9,7 @@
 
 #include "../src/constraint_release/constraint_release.hpp"
 #include "../src/constraint_release/heuzey.hpp"
+#include "../src/constraint_release/rubinsteincolby.hpp"
 #include "../src/time_series.hpp"
 #include "../src/file_reader.hpp"
 #include "../src/postprocess.hpp"
@@ -17,6 +18,9 @@
 #include <filesystem>
 #include <algorithm>
 #include <memory>
+
+static Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context&> rubinstein_constraint_release_factory(constraint_release::impl::RUBINSTEINCOLBY);
+static Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context&> heuzey_constraint_release_factory(constraint_release::impl::HEUZEY);
 
 struct Reproduction_context {
 	using path_impl_pair = std::pair<std::filesystem::path, constraint_release::impl>;
@@ -27,8 +31,9 @@ struct Reproduction_context {
 		ctx->Z = 300;
 		ctx->tau_e = 1;
 
-		CLF_context_builder builder(ctx);
+		Reproduction_context_builder builder(ctx);
     	builder.gather_physics();
+        builder.initialize();
 
     	ctx = builder.get_context();
     	ctx->apply_physics();
@@ -60,6 +65,24 @@ struct Reproduction_context {
 	std::shared_ptr<Context> ctx;
 };
 
+BOOST_AUTO_TEST_CASE(
+    constraint_release_factory,
+    * boost::unit_test::label("factory")
+    * boost::unit_test::label("heuzey")
+    * boost::unit_test::label("rubinstein")
+    * boost::unit_test::description("Test if constraint release factory returns an instance for given entried in constraint_release::impl."))
+{
+    std::array<constraint_release::impl, 2> impls{constraint_release::impl::HEUZEY, constraint_release::impl::RUBINSTEINCOLBY};
+
+    Context ctx;
+
+    for (auto impl : impls)
+    {
+        BOOST_TEST_INFO(impl);
+        auto CR = constraint_release::Factory_with_context::create(impl, 0.1, ctx);
+        BOOST_CHECK( CR );
+    }
+}
 
 BOOST_FIXTURE_TEST_CASE(
     lm_figure_six,
@@ -79,23 +102,4 @@ BOOST_FIXTURE_TEST_CASE(
     * boost::unit_test::description("Test Heuzey method for constraint release against literature data. (doi:10.1002/app.20881)"))
 {
 	check_impl("../validation/heuzey/figure5_R.dat", constraint_release::impl::HEUZEY);
-}
-
-BOOST_AUTO_TEST_CASE(
-    constraint_release_factory,
-    * boost::unit_test::label("factory")
-    * boost::unit_test::label("heuzey")
-    * boost::unit_test::label("rubinstein")
-    * boost::unit_test::description("Test if constraint release factory returns an instance for given entried in constraint_release::impl."))
-{
-    std::array<constraint_release::impl, 2> impls{constraint_release::impl::HEUZEY, constraint_release::impl::RUBINSTEINCOLBY};
-
-    Context ctx;
-
-    for (auto impl : impls)
-    {
-        BOOST_TEST_INFO(impl);
-        auto CR = constraint_release::Factory_with_context::create(impl, 0.1, ctx);
-        BOOST_CHECK( CR );
-    }
 }
