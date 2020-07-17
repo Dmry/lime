@@ -38,4 +38,7 @@ target_link_libraries(lime_static ${LIBS})
 
 ### EXECUTABLE ###
 add_executable(lime lime.cpp)
-target_link_libraries(lime lime_static lime_cuda_static)
+target_link_libraries(lime lime_static)
+if (CUDA_FOUD)
+  target_link_libraries(lime lime_cuda_static)
+endif()
