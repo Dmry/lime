@@ -21,6 +21,9 @@ if(TBB_FOUND)
   set(LIBS ${LIBS} tbb)
 endif()
 
+# Threads
+find_package(Threads REQUIRED)
+
 # CUDA
 find_package(CUDA)
 if(CUDA_FOUND)
@@ -41,4 +44,11 @@ add_executable(lime lime.cpp)
 target_link_libraries(lime lime_static)
 if (CUDA_FOUND AND CUDA)
   target_link_libraries(lime lime_cuda_static)
+endif()
+
+if(THREADS_HAVE_PTHREAD_ARG)
+  target_compile_options(lime PUBLIC "-pthread")
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+  target_link_libraries(lime "${CMAKE_THREAD_LIBS_INIT}")
 endif()
