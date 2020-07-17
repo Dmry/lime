@@ -1,7 +1,7 @@
 # CUDA
 find_package(CUDA)
 if(CUDA_FOUND)
-  add_definitions(-DCUDA)
+  add_definitions(-DCUDA_FOUND)
 
   file(GLOB_RECURSE cu_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cu)
   enable_language(CUDA)

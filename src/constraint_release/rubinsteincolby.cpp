@@ -130,12 +130,12 @@ RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e,
 
     std::for_each(exec_policy, km.begin(), km.end(), minimize_functor);
 
-    #ifndef CUDA
+    #if defined CUDA && defined CUDA_FOUND
     cudetails.set_km(km);
     #endif
 }
 
-#ifndef CUDA
+#if defined CUDA && defined CUDA_FOUND
 double
 RUB_constraint_release::Me(double epsilon) const
 {

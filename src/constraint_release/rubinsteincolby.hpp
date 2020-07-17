@@ -3,7 +3,7 @@
 #include "../time_series.hpp"
 
 #include "constraint_release.hpp"
-#ifndef CUDA
+#if defined CUDA && defined CUDA_FOUND
   #include "rubinsteincolby_cu.hpp"
 #endif
 
@@ -34,7 +34,7 @@ struct RUB_constraint_release : public IConstraint_release
     size_t realizations_;
     size_t realization_size_;
     
-    #ifndef CUDA
+    #if defined CUDA && defined CUDA_FOUND
     Cu_me_details cudetails;
     #endif
 
