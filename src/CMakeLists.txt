@@ -9,7 +9,7 @@ set(LIBS GSL::gsl)
 # Boost
 find_package(Boost COMPONENTS log log_setup REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
-set(LIBS ${LIBS} ${Boost_LIBRARIES} Boost::headers)
+set(LIBS ${LIBS} ${Boost_LIBRARIES} Boost::boost)
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
 set(LIBS ${LIBS} stdc++)
@@ -39,6 +39,6 @@ target_link_libraries(lime_static ${LIBS})
 ### EXECUTABLE ###
 add_executable(lime lime.cpp)
 target_link_libraries(lime lime_static)
-if (CUDA_FOUD)
+if (CUDA_FOUND AND CUDA)
   target_link_libraries(lime lime_cuda_static)
 endif()
