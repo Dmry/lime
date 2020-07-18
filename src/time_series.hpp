@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/iterator/zip_iterator.hpp>
+#include <boost/tuple/tuple_io.hpp>
 
 #include "context.hpp"
 #include "utilities.hpp"
@@ -16,23 +17,8 @@ struct Time_range
     using base = std::vector<primitive>;
     using type = std::shared_ptr<base>;
 
-    static Time_range::type generate_exponential(primitive base, primitive max)
-    {
-        Time_range::type time = Time_range::construct(static_cast<size_t>(log_with_base<primitive>(base, max)));
-
-        std::generate(time->begin(), time->end(), [n=0, base] () mutable {return std::pow(base, n++);});
-
-        return time;
-    }
-
-    static Time_range::type generate_normalized_exponential(primitive base, primitive max, primitive norm)
-    {
-        auto&& range = generate_exponential(base, max);
-
-        std::for_each(exec_policy, range->begin(), range->end(), [norm](primitive& t){t /= norm;});
-
-        return std::forward<type>(range);
-    }
+    static Time_range::type generate_exponential(primitive base, primitive max);
+    static Time_range::type generate_normalized_exponential(primitive base, primitive max, primitive norm);
 
     template<typename... T>
     static
@@ -58,40 +44,31 @@ struct Time_series
     using time_primitive = Time_range::primitive;
     using time_type = Time_range::type;
 
-    Time_series(time_type time_range)
-    :   time_range_{time_range},
-        values_(time_range_->size())
-    {}
+    Time_series(time_type time_range);
+    Time_series(time_type time_range, value_type values);
+    Time_series(const Time_series& other_time_series);
 
-    Time_series(time_type time_range, value_type values)
-    :   time_range_{time_range},
-        values_(values)
-    {
-        if (time_range_->size() != values_.size())
-            throw std::runtime_error("Tried to create a time series with incompatible time and value series.");
-    }
+    boost::iterators::zip_iterator<boost::tuples::tuple<Time_range::base::iterator, Time_series::value_type::iterator>> time_zipped_begin();
+    boost::iterators::zip_iterator<boost::tuples::tuple<Time_range::base::iterator, Time_series::value_type::iterator>> time_zipped_end();
 
-    Time_series(const Time_series& other_time_series)
-    :   time_range_{other_time_series.time_range_},
-        values_(other_time_series.values_)
-    {}
+    boost::iterators::zip_iterator<boost::tuples::tuple<Time_range::base::const_iterator, Time_series::value_type::const_iterator>>  time_zipped_begin() const;
+    boost::iterators::zip_iterator<boost::tuples::tuple<Time_range::base::const_iterator, Time_series::value_type::const_iterator>>  time_zipped_end()   const;
 
-    auto time_zipped_begin() {return boost::make_zip_iterator(boost::make_tuple(time_range_->begin(), values_.begin()));}
-    auto time_zipped_end()   {return boost::make_zip_iterator(boost::make_tuple(time_range_->end(), values_.end()));}
+    std::vector<value_primitive> operator()();
+    Time_series& operator=(const Time_series& other_time_series) noexcept;
 
-    std::vector<value_primitive> operator()() {return values_;}
-    Time_series& operator=(const Time_series& other_time_series) noexcept {values_ = other_time_series.values_; time_range_=other_time_series.time_range_; return *this;}
+    std::vector<value_primitive>::iterator begin();
+    std::vector<value_primitive>::iterator end();
 
-    std::vector<value_primitive>::iterator begin() {return values_.begin();}
-    std::vector<value_primitive>::iterator end() {return values_.end();}
+    std::vector<value_primitive>::const_iterator cbegin() const;
+    std::vector<value_primitive>::const_iterator cend() const;
 
-    std::vector<value_primitive>::const_iterator cbegin() const {return values_.cbegin();}
-    std::vector<value_primitive>::const_iterator cend() const {return values_.cend();}
+    size_t size() const;
 
-    size_t size() const {return values_.size();}
+    friend std::ostream& operator<< (std::ostream& stream, const Time_series& series);
 
-    Time_series::time_type get_time_range() const {return time_range_;}
-    Time_series::value_type get_values() const {return values_;}
+    Time_series::time_type get_time_range() const;
+    Time_series::value_type get_values() const;
 
     protected:
         Time_series::time_type time_range_;
@@ -101,9 +78,6 @@ struct Time_series
 struct Time_functor
 {
     using function_t = std::function<Time_series::value_primitive(Time_series::time_primitive)>;
-
-    Time_functor()
-    {}
 
     virtual Time_series operator()(const Time_series::time_type&) const = 0;
     virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) const = 0;

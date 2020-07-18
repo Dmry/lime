@@ -13,6 +13,7 @@
 #include "parallel_policy.hpp"
 #include "writer.hpp"
 #include "utilities.hpp"
+#include "writer.hpp"
 #include "tube.hpp"
 #include "fit.hpp"
 #include "postprocess.hpp"
@@ -52,17 +53,20 @@ struct lime : args::group<lime>
 
 struct cmd_writes_output_file
 {
-    Vector_writer<dat> writer;
+    Writer writer;
+    std::filesystem::path outpath;
 
-    cmd_writes_output_file()
-    {
-        writer.path = "out.dat";
-    }
+    cmd_writes_output_file() : writer{"out.dat"}
+    {}
 
     template<class F>
     void parse(F f)
     {
-        f(writer.path,       "-o", "--output",                   args::help("Set the file path to write output to"),             args::required());
+        auto set_file = [this] (auto&& val, const auto&, const args::argument&) {
+            writer.set_path(val);
+        };
+
+        f(outpath,  "-o", "--output",   args::help("Set the file path to write output to"),     args::lazy_callback(set_file));
     }
 };
 
@@ -174,10 +178,10 @@ struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd, c
 
         ICS_result result = build_driver(time);
 
-        result.context_->print();
+        BOOST_LOG_TRIVIAL(info) << *(result.context_);
         result.calculate();
 
-        writer.write(*result.get_time_range(), result.get_values());
+        writer << *(result.context_) << result;
     }
 };
 
@@ -260,10 +264,9 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
 
         fit.fit(input.get_values(), result, wt_pow);
 
-        result.context_->print();
-        BOOST_LOG_TRIVIAL(info) << "cv: " << result.CR->c_v_;
+        BOOST_LOG_TRIVIAL(info) << *(result.context_) << "cv: " << result.CR->c_v_;
 
-        writer.write(*result.get_time_range(), result.get_values());
+        writer << *(result.context_) << result;
     }
 };
 
@@ -298,7 +301,7 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file, cmd_takes_f
     void run()
     {
         auto input = get_file_contents();
-        auto original_filename = writer.path.filename().string();
+        auto original_filename = writer.get_path().filename().string();
 
         Reproduction_context_builder builder(ctx);
 
@@ -309,8 +312,9 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file, cmd_takes_f
             Derivative_result derivative(input.get_time_range(), &builder, *pair.second);
             derivative.calculate();
 
-            writer.path.replace_filename(pair.first + "_" + original_filename);
-            writer.write(*derivative.get_time_range(), derivative.get_values());
+            writer.set_filename(pair.first + "_" + original_filename);
+
+            writer << derivative;
         }
     }
 };

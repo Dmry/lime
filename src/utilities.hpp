@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/tuple/tuple.hpp>
+
 #include "lime_log_utils.hpp"
 
 #include <cmath>
@@ -88,3 +90,15 @@ struct Summation
     T step;
     sum_func_t func_;
 };
+
+namespace boost{
+namespace tuples{
+
+template<typename T, typename U>
+std::ostream & operator<<( std::ostream& stream , const boost::tuples::tuple<T, U>& tup)
+{
+    return stream <<  boost::get<0>(tup) << " " << boost::get<1>(tup);
+};
+
+}
+}

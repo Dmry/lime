@@ -46,22 +46,18 @@ void Context::notify_computes()
     }
 }
 
-// Prints name of every variable in the context and its current value
-// Logs to info if > 0, logs to warning if < 0
-void Context::print()
+std::ostream& operator<< (std::ostream &stream, const Context& context)
 {
-    auto warn_predicate = [](const double& val)->bool {return val < 0 or val != val;};
-
     using namespace boost::fusion;
 
-    // Credit: Joao Tavora
-    for_each(boost::mpl::range_c<
+    for_each(boost::mpl::range_c <
         unsigned, 0, result_of::size<Context>::value>(),
             [&](auto index) constexpr {
-                info_or_warn(extension::struct_member_name<Context,index>::call(), at_c<index>(*this),
-                warn_predicate);
+                stream << extension::struct_member_name<Context,index>::call() << " " << at_c<index>(context) << "\n";
             }
     );
+ 
+    return stream;
 }
 
 IContext_builder::IContext_builder()

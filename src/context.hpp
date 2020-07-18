@@ -8,6 +8,8 @@
 #include <memory>
 #include <functional>
 
+class Writer;
+
 struct Physics
 {
     virtual void apply(struct Context&) = 0;
@@ -52,7 +54,7 @@ struct Context
         void attach_compute(struct Compute* compute);
         void attach_compute(std::vector<struct Compute*> computes);
 
-        void print();
+        friend std::ostream& operator<< (std::ostream &stream, const Context& context);
 
     private:
         std::vector<Physics_ptr> physics_;

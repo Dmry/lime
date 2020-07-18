@@ -1,74 +1,60 @@
 #pragma once
 
-/*
- *
- *  Copyright © 2020 Daniel Emmery (CNRS) 
- * 
- *  Writes arbitrary number of vectors to file.
- *  Requires vector type to have .size() and operator
- * 
- *  GPL 2.0 License
- * 
- */
+#include <boost/fusion/include/for_each.hpp>
+#include <boost/fusion/include/algorithm.hpp>
+#include <boost/phoenix/phoenix.hpp>
+#include <boost/mpl/range_c.hpp>
+#include <boost/tuple/tuple_io.hpp>
 
+#include "context.hpp"
 
-#include <filesystem>
 #include <fstream>
-#include <vector>
-#include <cassert>
-#include <type_traits>
+#include <filesystem>
 
-template <typename T, typename = void>
-struct is_write_compatible : std::false_type {};
-
-template <typename T>
-struct is_write_compatible<T, std::void_t<
-    decltype(std::declval<T>().size()),
-    decltype(std::declval<T>().operator[](std::declval<typename T::size_type>()))
-    >> : std::true_type {};
-
-template<template<class> typename... Policies>
-struct Vector_writer : public Policies<Vector_writer<Policies...>>...
+struct Writer
 {
-    std::filesystem::path path;
-
-    Vector_writer() : path{"out.dat"}
+    Writer(std::filesystem::path outpath) : stream_{outpath}, current_path_{outpath}
     {}
 
-    template<typename... T>
-    void
-    write(const T&... out)
-    {
-        static_assert((is_write_compatible<T>() && ...), "Can only pass containers that have .size() and operator[].");
-        (static_cast<Policies<Vector_writer<Policies...>>&>(*this).write(out...), ...);
-    }
+    std::ofstream& get_stream() {return stream_;}
+    std::filesystem::path get_path() {return current_path_;}
+    std::ofstream& set_path(std::filesystem::path path) {stream_.close(); current_path_ = path; return stream_ = std::ofstream{path};}
+    std::ofstream& set_filename(const std::string& new_filename) {stream_.close(); current_path_.replace_filename(new_filename); return stream_ = std::ofstream{current_path_};}
+
+private:
+    std::ofstream stream_;
+    std::filesystem::path current_path_;
 };
 
-template<typename U, typename... T>
-size_t
-size_helper(const U& first, const T&...)
+Writer& operator<< (Writer& writer, const Context& context)
 {
-    return first.size();
+    using namespace boost::fusion;
+
+    for_each(boost::mpl::range_c <
+        unsigned, 0, result_of::size<Context>::value>(),
+            [&](auto index) constexpr {
+                writer.get_stream() << "# " << extension::struct_member_name<Context,index>::call() << " " << at_c<index>(context) << "\n";
+            }
+    );
+ 
+    return writer;
 }
 
-template<typename Derived>
-struct dat
+namespace boost{
+namespace tuples{
+
+template<typename T, typename U>
+std::ostream & operator<<(Writer& writer, const boost::tuples::tuple<T, U>& tup)
 {
-    template<typename... T>
-    void
-    write(T&&... out)
-    {
-        auto base = static_cast<Derived&>(*this);
-
-        std::ofstream out_file{base.path};
-
-        assert( (out.size() == ...) );
-
-        for(size_t i = 0 ; i < size_helper(out...) ; ++i)
-        {
-            ((out_file << out[i] << ' ') , ...) << std::endl;
-        }
-
-        out_file.flush();
-    }
+    return writer <<  boost::get<0>(tup) << " " << boost::get<1>(tup);
 };
+
+}
+}
+
+template<typename T>
+Writer& operator<< (Writer& writer, const T& val)
+{
+    writer.get_stream() << val;
+    return writer;
+}
