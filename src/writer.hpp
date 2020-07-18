@@ -13,13 +13,13 @@
 
 struct Writer
 {
-    Writer(std::filesystem::path outpath) : stream_{outpath}, current_path_{outpath}
+    Writer(std::filesystem::path outpath) : current_path_{outpath}
     {}
 
-    std::ofstream& get_stream() {return stream_;}
+    std::ofstream& get_stream() {if (not stream_.is_open()) stream_.open(current_path_); return stream_;}
     std::filesystem::path get_path() {return current_path_;}
-    std::ofstream& set_path(std::filesystem::path path) {stream_.close(); current_path_ = path; return stream_ = std::ofstream{path};}
-    std::ofstream& set_filename(const std::string& new_filename) {stream_.close(); current_path_.replace_filename(new_filename); return stream_ = std::ofstream{current_path_};}
+    void set_path(std::filesystem::path path) {stream_.close(); current_path_ = path;}
+    void set_filename(const std::string& new_filename) {stream_.close(); current_path_.replace_filename(new_filename);}
 
 private:
     std::ofstream stream_;
@@ -46,7 +46,7 @@ namespace tuples{
 template<typename T, typename U>
 std::ostream & operator<<(Writer& writer, const boost::tuples::tuple<T, U>& tup)
 {
-    return writer <<  boost::get<0>(tup) << " " << boost::get<1>(tup);
+    return writer << boost::get<0>(tup) << " " << boost::get<1>(tup);
 };
 
 }

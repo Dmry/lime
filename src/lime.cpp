@@ -260,9 +260,9 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
 
         auto result = build_driver(input.get_time_range());
 
-        Fit<double, double> fit(result.context_->N_e, result.context_->tau_monomer);
+        Fit<double, double> fit_driver(result.context_->N_e, result.context_->tau_monomer);
 
-        fit.fit(input.get_values(), result, wt_pow);
+        fit_driver.fit(input.get_values(), result, wt_pow);
 
         BOOST_LOG_TRIVIAL(info) << *(result.context_) << "cv: " << result.CR->c_v_;
 
