@@ -51,6 +51,24 @@ Contour_length_fluctuations::update(const Context& ctx)
     norm_ = norm(ctx.Z, ctx.tau_e);
 }
 
+void
+Contour_length_fluctuations::validate_update(const Context& ctx) const
+{
+    auto args = boost::hana::make_tuple(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, ctx.Z);
+
+    using namespace checks;
+    using namespace checks::policies;
+
+    try
+    {
+        check<decltype(args), is_nan<throws>, zero<throws>>(args);
+    }
+    catch (const std::exception& ex)
+    {
+        std::throw_with_nested(std::runtime_error("in CLF update"));
+    }
+}
+
 double
 Contour_length_fluctuations::e_star(double Z, double tau_e, double G_f_normed)
 {

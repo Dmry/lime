@@ -1,7 +1,6 @@
 #include <boost/math/quadrature/exp_sinh.hpp>
 #include <boost/math/tools/roots.hpp>
-#include <boost/fusion/container/generation/list_tie.hpp>
-#include <boost/fusion/include/list_tie.hpp>
+#include <boost/hana.hpp>
 
 #include "../utilities.hpp"
 #include "../parallel_policy.hpp"
@@ -51,9 +50,9 @@ Time_series::value_primitive RUB_constraint_release::operator()(const Time_serie
 }
 
 void
-RUB_constraint_release::validate_update(const Context& ctx)
+RUB_constraint_release::validate_update(const Context& ctx) const
 {
-    auto args = boost::fusion::list_tie(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, ctx.Z);
+    auto args = boost::hana::make_tuple(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, ctx.Z);
 
     using namespace checks;
     using namespace checks::policies;

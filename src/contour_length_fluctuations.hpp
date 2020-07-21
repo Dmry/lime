@@ -2,6 +2,7 @@
 
 #include "time_series.hpp"
 #include "context.hpp"
+#include "checks.hpp"
 
 #include <memory>
 #include <vector>
@@ -30,6 +31,7 @@ struct Contour_length_fluctuations : public Time_functor, Compute
     static double e_star(double Z, double tau_e, double G_f_normed);  
     sum_t sum_term(double Z, double tau_df);
     double norm(double Z, double tau_e);
+    void validate_update(const Context& ctx) const override;
 
     double G_f_normed_;
     double e_star_;

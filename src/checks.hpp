@@ -1,28 +1,26 @@
 #pragma once
 
-#include <boost/fusion/include/for_each.hpp>
-#include <boost/fusion/include/is_sequence.hpp>
-#include <boost/fusion/support/is_sequence.hpp>
+#include <boost/hana.hpp>
+
+#include "context.hpp"
 
 #include <string>
 #include <stdexcept>
 
 namespace checks
 {
+    template<typename... check_types>
+    void
+    check(IContext_view* view)
+    {
+        (view->accept(check_types()), ...);
+    }
+
     template<typename T, typename... check_types>
     void
     check(const T& checkable)
     {
-        using namespace boost::fusion;
-
-        if constexpr (traits::is_sequence<T>())
-        {
-            (for_each(checkable, check_types()), ...);
-        }
-        else
-        {
-            (check_types()(checkable), ...);
-        }
+        (boost::hana::for_each(checkable, check_types()), ...);
     }
 
     namespace policies

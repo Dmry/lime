@@ -26,7 +26,7 @@ struct RUB_constraint_release : public IConstraint_release
     double cp_two(double Z, double tau_e, double e_star, double epsilon);
     double e_star(double Z, double tau_e, double G_f_normed);
     void set_sizing_requirements(size_t Z);
-    void validate_update(const Context& ctx);
+    void validate_update(const Context& ctx) const override;
 
     double Me(double&& epsilon) const;
     double integral_result(double t) const;

@@ -74,6 +74,7 @@ struct result_cmd
 {
     std::shared_ptr<Context> ctx;
     std::shared_ptr<System> system;
+    std::unique_ptr<IContext_view> view;
 
     constraint_release::impl CR_impl;
     
@@ -96,11 +97,13 @@ struct result_cmd
         f(CR_impl,           "--rub",                            args::help("Enable Rubinstein&Colby constraint release"),   args::set(constraint_release::impl::RUBINSTEINCOLBY));
     }
 
-    ICS_result build_driver(Time_series::time_type time)
+    ICS_result build_result(Time_series::time_type time)
     {
         std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
 
         ICS_result driver(time, builder.get(), CR_impl);
+
+        view = builder->get_view();
 
         driver.CR->c_v_ = c_v;
 
@@ -176,12 +179,12 @@ struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd, c
 
         Time_range::type time = Time_range::generate_exponential(base, max_t);
 
-        ICS_result result = build_driver(time);
+        ICS_result result = build_result(time);
 
-        BOOST_LOG_TRIVIAL(info) << *(result.context_);
+        BOOST_LOG_TRIVIAL(info) << *view;
         result.calculate();
 
-        writer << *(result.context_) << result;
+        writer << *view << result;
     }
 };
 
@@ -213,7 +216,7 @@ struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
     {
         auto input = get_file_contents();
 
-        ICS_result result = build_driver(input.get_time_range());
+        ICS_result result = build_result(input.get_time_range());
 
         result.calculate();
 
@@ -258,15 +261,15 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
     {
         auto input = get_file_contents();
 
-        auto result = build_driver(input.get_time_range());
+        auto result = build_result(input.get_time_range());
 
         Fit<double, double> fit_driver(result.context_->N_e, result.context_->tau_monomer);
 
         fit_driver.fit(input.get_values(), result, wt_pow);
 
-        BOOST_LOG_TRIVIAL(info) << *(result.context_) << "cv: " << result.CR->c_v_;
+        BOOST_LOG_TRIVIAL(info) << *view << "cv: " << result.CR->c_v_;
 
-        writer << *(result.context_) << result;
+        writer << *view << result;
     }
 };
 

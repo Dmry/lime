@@ -7,9 +7,10 @@
  */
 
 #include "../time_series.hpp"
-#include "constraint_release.hpp"
-
+#include "../checks.hpp"
 #include "../factory.hpp"
+
+#include "constraint_release.hpp"
 
 #include <vector>
 #include <variant>
@@ -100,6 +101,7 @@ struct HEU_constraint_release : public IConstraint_release
     double epsilon_zero(double Z, double tau_e) const;
     double integral_result(double lower_bound, double t) const;
     Model_ptr get_model(double Z, double tau_e, double tau_df);
+    void validate_update(const Context& ctx) const override;
 
     Model_ptr model_;
     double epsilon_zero_;

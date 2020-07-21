@@ -41,9 +41,28 @@ Time_series::value_primitive HEU_constraint_release::operator()(const Time_serie
 void
 HEU_constraint_release::update(const Context& ctx)
 {
+    validate_update(ctx);
     tau_e_ = ctx.tau_e;
     model_ = get_model(ctx.Z, ctx.tau_e, ctx.tau_df);
     epsilon_zero_ = epsilon_zero(ctx.Z, ctx.tau_e);
+}
+
+void
+HEU_constraint_release::validate_update(const Context& ctx) const
+{
+    auto args = boost::hana::make_tuple(ctx.Z, ctx.tau_e, ctx.tau_df);
+
+    using namespace checks;
+    using namespace checks::policies;
+
+    try
+    {
+        check<decltype(args), is_nan<throws>, zero<throws>>(args);
+    }
+    catch (const std::exception& ex)
+    {
+        std::throw_with_nested(std::runtime_error("in HEU_cr update"));
+    }
 }
 
 // TODO: should really create a predicated factory for this

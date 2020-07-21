@@ -1,8 +1,3 @@
-#include <boost/fusion/include/for_each.hpp>
-#include <boost/fusion/include/algorithm.hpp>
-#include <boost/phoenix/phoenix.hpp>
-#include <boost/mpl/range_c.hpp>
-
 #include "context.hpp"
 #include "utilities.hpp"
 #include "tube.hpp"
@@ -46,18 +41,9 @@ void Context::notify_computes()
     }
 }
 
-std::ostream& operator<< (std::ostream &stream, const Context& context)
+std::ostream& operator<<(std::ostream& stream, const IContext_view& view)
 {
-    using namespace boost::fusion;
-
-    for_each(boost::mpl::range_c <
-        unsigned, 0, result_of::size<Context>::value>(),
-            [&](auto index) constexpr {
-                stream << extension::struct_member_name<Context,index>::call() << " " << at_c<index>(context) << "\n";
-            }
-    );
- 
-    return stream;
+    return view.serialize(stream);
 }
 
 IContext_builder::IContext_builder()
@@ -88,21 +74,6 @@ ICS_context_builder::ICS_context_builder(std::shared_ptr<struct System> system, 
 :   IContext_builder{context}, system_{system}
 {}
 
-BOOST_FUSION_ADAPT_STRUCT_NAMED(
-    Context, ICS_context_struct,
-    Z,
-    M_e,
-    N,
-    N_e,
-    G_f_normed,
-    tau_e,
-    tau_monomer,
-    G_e,
-    tau_r,
-    tau_d_0,
-    tau_df
-)
-
 void
 ICS_context_builder::gather_physics()
 {
@@ -130,7 +101,6 @@ ICS_context_builder::initialize()
 void
 ICS_context_builder::validate_state()
 {
-    using namespace boost::fusion::adapted;
     using namespace checks;
     using namespace checks::policies;
 
@@ -138,12 +108,18 @@ ICS_context_builder::validate_state()
 
     try
     {
-        check<ICS_context_struct, is_nan<throws>, zero<prints_error_append<location>>>(*context_);
+        check<is_nan<throws>, zero<prints_error_append<location>>>(this->get_view().get());
     }
     catch (const std::exception& ex)
     {
         std::throw_with_nested(std::runtime_error(location));
     }
+}
+
+std::unique_ptr<IContext_view>
+ICS_context_builder::get_view()
+{
+    return std::make_unique<Context_view<ICS_keys>>(*context_);
 }
 
 Reproduction_context_builder::Reproduction_context_builder()
@@ -153,16 +129,6 @@ Reproduction_context_builder::Reproduction_context_builder()
 Reproduction_context_builder::Reproduction_context_builder(std::shared_ptr<Context> context)
 :   IContext_builder{context}
 {}
-
-BOOST_FUSION_ADAPT_STRUCT_NAMED(
-    Context, Reproduction_context_struct,
-    Z,
-    tau_e,
-    N,
-    G_f_normed,
-    tau_d_0,
-    tau_df
-);
 
 void
 Reproduction_context_builder::gather_physics()
@@ -181,16 +147,21 @@ Reproduction_context_builder::initialize()
 void
 Reproduction_context_builder::validate_state()
 {
-    using namespace boost::fusion::adapted;
     using namespace checks;
     using namespace checks::policies;
 
     try
     {
-        check<ICS_context_struct, is_nan<throws>, zero<throws>>(*context_);
+        check<is_nan<throws>, zero<throws>>(this->get_view().get());
     }
     catch (const std::exception& ex)
     {
-        std::throw_with_nested(std::runtime_error("in ICS context builder"));
+        std::throw_with_nested(std::runtime_error("in Reproduction context builder"));
     }
+}
+
+std::unique_ptr<IContext_view>
+Reproduction_context_builder::get_view()
+{
+    return std::make_unique<Context_view<Reproduction_keys>>(*context_);
 }

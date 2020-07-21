@@ -3,6 +3,7 @@
 #include "../context.hpp"
 #include "../time_series.hpp"
 #include "../factory.hpp"
+#include "../checks.hpp"
 
 #include <vector>
 
@@ -17,6 +18,7 @@ struct IConstraint_release : public Time_functor, public Compute
     virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) const = 0;
     
     virtual void update(const Context& ctx) = 0;
+    virtual void validate_update(const Context& ctx) const = 0;
     double c_v_;
 };
 
