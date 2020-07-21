@@ -1,11 +1,21 @@
 #pragma once
 
-#include <boost/fusion/adapted/struct.hpp>
+#include <boost/hana.hpp>
+#include <boost/hana/define_struct.hpp>
+#include <boost/hana/keys.hpp>
+#include <boost/hana/string.hpp>
+#include <boost/hana/tuple.hpp>
+#define BOOST_HANA_CONFIG_ENABLE_STRING_UDL
+
+#define LIME_KEY(x) BOOST_HANA_STRING(#x)
 
 #include "utilities.hpp"
 
 #include <vector>
 #include <memory>
+#include <functional>
+
+class Writer;
 
 struct Physics
 {
@@ -51,10 +61,6 @@ struct Context
         void attach_compute(struct Compute* compute);
         void attach_compute(std::vector<struct Compute*> computes);
 
-        void check_nan();
-
-        void print();
-
     private:
         std::vector<Physics_ptr> physics_;
         std::vector<struct Compute*> computes_;
@@ -62,10 +68,73 @@ struct Context
         void notify_computes();
 };
 
-BOOST_FUSION_ADAPT_STRUCT(Context, M, N, N_e, M_e, Z, a, b, G_e, G_f_normed, tau_e, tau_d_0, tau_r, tau_df, tau_monomer);
-
-struct Compute {
+struct Compute
+{
     virtual void update(const Context& ctx) = 0;
+    virtual void validate_update(const Context& ctx) const = 0;
+};
+
+BOOST_HANA_ADAPT_STRUCT(Context,
+    M, N, N_e, M_e, Z, a, b, G_e, G_f_normed, tau_e, tau_d_0, tau_r, tau_df, tau_monomer);
+
+class IContext_view
+{
+private:
+    virtual std::ostream& serialize(std::ostream&, const char* prefix = "\0") const = 0;
+
+public:
+    explicit IContext_view(const Context& ctx) : context_{ctx} {};
+    virtual ~IContext_view() = default;
+    virtual void accept(std::function<void(double&)> f) const = 0;
+
+    friend std::ostream& operator << (std::ostream& stream, const IContext_view& view);
+    friend Writer& operator << (struct Writer& stream, const IContext_view& view);
+
+    const Context& context_;
+};
+
+
+template<const auto& keys>
+class Context_view : public IContext_view
+{
+    public:
+        explicit Context_view(const Context& ctx)
+        :   IContext_view{ctx}
+        {}
+
+        void
+        accept(std::function<void(double&)> f) const override
+        {
+            namespace hana = boost::hana;
+            using namespace hana::literals;
+
+            auto get_values = [&](auto const& obj) {
+                return [&](auto const& ...key) {
+                    return hana::make_tuple(hana::at_key(obj, key)...);
+                };
+            };
+
+            auto vals = hana::unpack(keys, get_values(context_));
+            hana::for_each(vals, f);
+        }
+
+    private:
+        std::ostream&
+        serialize(std::ostream& stream, const char* prefix = "\0") const override
+        {
+            namespace hana = boost::hana;
+            using namespace hana::literals;
+
+            auto get_values = [&](auto const& obj) {
+                return [&](auto const& ...key) {
+                    ((stream << prefix << key.c_str() << " " << hana::at_key(obj, key) << '\n'), ...);
+                };
+            };
+
+            hana::unpack(keys, get_values(context_));
+ 
+            return stream;
+        }
 };
 
 class IContext_builder
@@ -75,6 +144,9 @@ class IContext_builder
         IContext_builder(std::shared_ptr<Context>);
 
         virtual void gather_physics() = 0;
+        virtual void initialize() = 0;
+        virtual void validate_state() = 0;
+        virtual std::unique_ptr<IContext_view> get_view() = 0;
 
         void set_context(std::shared_ptr<Context>);
         std::shared_ptr<Context> get_context();
@@ -83,6 +155,20 @@ class IContext_builder
         std::shared_ptr<Context> context_;
 };
 
+constexpr auto ICS_keys = boost::hana::make_tuple(
+    LIME_KEY(Z),
+    LIME_KEY(M_e),
+    LIME_KEY(N),
+    LIME_KEY(N_e),
+    LIME_KEY(G_f_normed),
+    LIME_KEY(tau_e),
+    LIME_KEY(tau_monomer),
+    LIME_KEY(G_e),
+    LIME_KEY(tau_r),
+    LIME_KEY(tau_d_0),
+    LIME_KEY(tau_df)
+);
+
 class ICS_context_builder : public IContext_builder
 {
     public:
@@ -90,16 +176,31 @@ class ICS_context_builder : public IContext_builder
         ICS_context_builder(std::shared_ptr<struct System> sys, std::shared_ptr<Context>);
 
         void gather_physics() override;
-    
+        void initialize() override;
+        void validate_state() override;
+        std::unique_ptr<IContext_view> get_view() override;
+
     protected:
         std::shared_ptr<System> system_;
 };
 
-class CLF_context_builder : public IContext_builder
+constexpr auto Reproduction_keys = boost::hana::make_tuple(
+    LIME_KEY(Z),
+    LIME_KEY(N),
+    LIME_KEY(G_f_normed),
+    LIME_KEY(tau_e),
+    LIME_KEY(tau_d_0),
+    LIME_KEY(tau_df)
+);
+
+class Reproduction_context_builder : public IContext_builder
 {
     public:
-        CLF_context_builder();
-        CLF_context_builder(std::shared_ptr<Context>);
+        Reproduction_context_builder();
+        Reproduction_context_builder(std::shared_ptr<Context>);
 
+        std::unique_ptr<IContext_view> get_view() override;
         void gather_physics() override;
+        void initialize() override;
+        void validate_state() override;
 };

@@ -1,11 +1,7 @@
-#include <boost/fusion/include/for_each.hpp>
-#include <boost/fusion/include/algorithm.hpp>
-#include <boost/phoenix/phoenix.hpp>
-#include <boost/mpl/range_c.hpp>
-
 #include "context.hpp"
 #include "utilities.hpp"
 #include "tube.hpp"
+#include "checks.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -45,42 +41,9 @@ void Context::notify_computes()
     }
 }
 
-struct check_nan_impl
+std::ostream& operator<<(std::ostream& stream, const IContext_view& view)
 {
-    template<typename T>
-    void operator()(T& t) const
-    {
-        if (t != t)
-        {
-            throw std::runtime_error("Got NaN");
-        }
-    }
-};
-
-// Checks if any of the values in the context is NaN
-void Context::check_nan()
-{
-    using boost::phoenix::arg_names::arg1;
-
-    boost::fusion::for_each(*this, check_nan_impl());
-}
-
-// Prints name of every variable in the context and its current value
-// Logs to info if > 0, logs to warning if < 0
-void Context::print()
-{
-    auto warn_predicate = [](const double& val)->bool {return val < 0 or val != val;};
-
-    using namespace boost::fusion;
-
-    // Credit: Joao Tavora
-    for_each(boost::mpl::range_c<
-        unsigned, 0, result_of::size<Context>::value>(),
-            [&](auto index) constexpr {
-                info_or_warn(extension::struct_member_name<Context,index>::call(), at_c<index>(*this),
-                warn_predicate);
-            }
-    );
+    return view.serialize(stream);
 }
 
 IContext_builder::IContext_builder()
@@ -129,18 +92,76 @@ ICS_context_builder::gather_physics()
     context_->add_physics_in_place<Tau_df>();
 }
 
-CLF_context_builder::CLF_context_builder()
+void
+ICS_context_builder::initialize()
+{
+    context_->apply_physics();
+}
+
+void
+ICS_context_builder::validate_state()
+{
+    using namespace checks;
+    using namespace checks::policies;
+
+    static std::string location("in ICS context builder");
+
+    try
+    {
+        check<is_nan<throws>, zero<prints_error_append<location>>>(this->get_view().get());
+    }
+    catch (const std::exception& ex)
+    {
+        std::throw_with_nested(std::runtime_error(location));
+    }
+}
+
+std::unique_ptr<IContext_view>
+ICS_context_builder::get_view()
+{
+    return std::make_unique<Context_view<ICS_keys>>(*context_);
+}
+
+Reproduction_context_builder::Reproduction_context_builder()
 :   IContext_builder{}
 {}
 
-CLF_context_builder::CLF_context_builder(std::shared_ptr<Context> context)
+Reproduction_context_builder::Reproduction_context_builder(std::shared_ptr<Context> context)
 :   IContext_builder{context}
 {}
 
 void
-CLF_context_builder::gather_physics()
+Reproduction_context_builder::gather_physics()
 {
     context_->add_physics_in_place<G_f_normed>();
     context_->add_physics_in_place<Tau_d_0>();
     context_->add_physics_in_place<Tau_df>();
+}
+
+void
+Reproduction_context_builder::initialize()
+{
+    context_->apply_physics();
+}
+
+void
+Reproduction_context_builder::validate_state()
+{
+    using namespace checks;
+    using namespace checks::policies;
+
+    try
+    {
+        check<is_nan<throws>, zero<throws>>(this->get_view().get());
+    }
+    catch (const std::exception& ex)
+    {
+        std::throw_with_nested(std::runtime_error("in Reproduction context builder"));
+    }
+}
+
+std::unique_ptr<IContext_view>
+Reproduction_context_builder::get_view()
+{
+    return std::make_unique<Context_view<Reproduction_keys>>(*context_);
 }

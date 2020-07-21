@@ -1,9 +1,11 @@
 #include <boost/math/quadrature/exp_sinh.hpp>
 #include <boost/math/tools/roots.hpp>
+#include <boost/hana.hpp>
 
 #include "../utilities.hpp"
 #include "../parallel_policy.hpp"
 #include "../lime_log_utils.hpp"
+#include "../checks.hpp"
 
 #include "rubinsteincolby.hpp"
 
@@ -13,19 +15,19 @@
 #include <cmath>
 #include <utility>
 
-Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context&> rubinstein_constraint_release_factory(constraint_release::impl::RUBINSTEINCOLBY);
-
-RUB_constraint_release::RUB_constraint_release(double c_v, Context& ctx, size_t realizations)
-: RUB_constraint_release{c_v, ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df, realizations}
+RUB_constraint_release::RUB_constraint_release(double c_v, Context& ctx)
+: RUB_constraint_release{c_v, ctx.Z, ctx.tau_e, ctx.G_f_normed, ctx.tau_df}
 {
     ctx.attach_compute(this);
 }
 
-RUB_constraint_release::RUB_constraint_release(double c_v, double Z, double tau_e, double G_f_normed, double tau_df, size_t realizations)
-: IConstraint_release{c_v}, Z_{Z}, tau_e_{tau_e}, G_f_normed_{G_f_normed}, tau_df_{tau_df}, realizations_{realizations}, km(static_cast<size_t>(Z_*realizations_)), prng{std::random_device{}()}, dist(0, 1)
+RUB_constraint_release::RUB_constraint_release(double c_v, double Z, double tau_e, double G_f_normed, double tau_df)
+: IConstraint_release{c_v}, prng{std::random_device{}()}, dist(0, 1)
 {
-    const double E_star = e_star(Z_, tau_e_, G_f_normed_);
-    generate(G_f_normed_, tau_df_, tau_e_, E_star, Z_);
+    const double E_star = e_star(Z, tau_e, G_f_normed);
+
+    // Sets km and realizations_
+    generate(G_f_normed, tau_df, tau_e, E_star, Z);
 }
 
 Time_series RUB_constraint_release::operator()(const Time_series::time_type& time_range) const
@@ -48,13 +50,44 @@ Time_series::value_primitive RUB_constraint_release::operator()(const Time_serie
 }
 
 void
+RUB_constraint_release::validate_update(const Context& ctx) const
+{
+    auto args = boost::hana::make_tuple(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, ctx.Z);
+
+    using namespace checks;
+    using namespace checks::policies;
+
+    try
+    {
+        check<decltype(args), is_nan<throws>, zero<throws>>(args);
+    }
+    catch (const std::exception& ex)
+    {
+        std::throw_with_nested(std::runtime_error("in RUB_cr update"));
+    }
+}
+
+void
 RUB_constraint_release::update(const Context& ctx)
 {
-    Z_ = ctx.Z; tau_e_ = ctx.tau_e; G_f_normed_ = ctx.G_f_normed; tau_df_ = ctx.tau_df;
-    km.resize(static_cast<size_t>(Z_*realizations_));
-    const double E_star = e_star(Z_, tau_e_, G_f_normed_);
-    generate(G_f_normed_, tau_df_, tau_e_, E_star, Z_);
+    validate_update(ctx);
+
+    const double E_star = e_star(ctx.Z, ctx.tau_e, ctx.G_f_normed);
+    generate(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, E_star, ctx.Z);
 }
+
+void
+RUB_constraint_release::set_sizing_requirements(size_t Z)
+{
+    realization_size_ = Z;
+    realizations_ = (Z > 100 ? Z*2 : 200);
+
+    if (size_t required_size = Z*realizations_; km.size() != required_size)
+    {
+        km.resize(required_size);
+    }
+}
+
 
 double
 RUB_constraint_release::e_star(double Z, double tau_e, double G_f_normed)
@@ -67,6 +100,8 @@ RUB_constraint_release::e_star(double Z, double tau_e, double G_f_normed)
 void
 RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e, double e_star, double Z)
 {
+    set_sizing_requirements(static_cast<size_t>(Z));
+
     double p_star = std::sqrt(Z/10.0);
 
     std::generate(km.begin(), km.end(), [this] (){ return dist(prng); });
@@ -87,54 +122,55 @@ RUB_constraint_release::generate(double G_f_normed, double tau_df, double tau_e,
         }
         catch(const std::exception& ex)
         {
-            //BOOST_LOG_TRIVIAL(debug) << ex.what();
         }
         
         rand_ = (r.first + (r.second - r.first) / 2.0);
     };
 
     std::for_each(exec_policy, km.begin(), km.end(), minimize_functor);
+
+    #if defined CUDA && defined CUDA_FOUND
+    cudetails.set_km(km);
+    #endif
 }
 
+#if defined CUDA && defined CUDA_FOUND
 double
 RUB_constraint_release::Me(double epsilon) const
 {
-    double sum{0.0};
-    size_t realization_size{static_cast<size_t>(Z_)};
+    return cudetails.cu_me(epsilon, static_cast<size_t>(Z_), realizations_);
+}
+#else
+double
+RUB_constraint_release::Me(double&& epsilon) const
+{
+    size_t sum{0};
+    double s{0};
 
     for (size_t j = 0 ; j < realizations_ ; ++j)
     {
-        size_t stride = j * realization_size;
+        const size_t stride = j * realization_size_;
 
-        // Si needs to be local to avoid race conditions.
-        std::vector<double> Si(realization_size-1);
+        s = km[0+stride] + km[1+stride] - epsilon;
+        if (s < 0.0) ++sum;
 
-        Si[0] = km[0+stride] + km[1+stride] - epsilon;
-
-        // Race condition alert! No parallel execution here
-        for (size_t i = 1+stride, s = 1 ; i < stride+Si.size() ; ++i, ++s)
-            Si[s] = km[i] + km[i+1] - epsilon - square(km[i]) / Si[s-1];
-
-        // par_unseq count_if is horrendously slow on the test system.
-        // Using sequential execution for robustness (wrt speed) with
-        // virtually no performance penalty.
-        auto count = std::count_if(std::execution::seq, Si.begin(), Si.end(), [](const double& si) {return si < 0;});
-
-        if (count > 0)
+        for (size_t i = 1+stride; i < stride+realization_size_-1 ; ++i)
         {
-            sum += static_cast<double>(count);
+            s = km[i] + km[i+1] - epsilon - square(km[i])/s;
+            if (s < 0.0) ++sum;
         }
     }
 
-    return sum / static_cast<double>(km.size());
+    return static_cast<double>(sum) / static_cast<double>(km.size());
 }
+#endif
 
 double
 RUB_constraint_release::integral_result(double t) const
 {   
     // Integration by parts
     auto f = [this, t] (double epsilon) -> double {
-        return Me(epsilon) * std::exp(-epsilon*c_v_*t);
+        return Me(std::forward<double>(epsilon)) * exp(-epsilon*c_v_*t);
     };
 
     double res{0.0};
@@ -144,7 +180,7 @@ RUB_constraint_release::integral_result(double t) const
         using namespace boost::math::quadrature;
         exp_sinh<double> integrator;
         double termination = std::sqrt(std::numeric_limits<double>::epsilon());
-        res = c_v_*t * integrator.integrate(f, 0, std::numeric_limits<double>::infinity(), termination, nullptr, nullptr, nullptr);
+        res = c_v_ * t * integrator.integrate(f, 0, std::numeric_limits<double>::infinity(), termination, nullptr, nullptr, nullptr);
     }
     catch (const std::exception& ex)
     {

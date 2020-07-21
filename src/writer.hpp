@@ -1,74 +1,34 @@
 #pragma once
 
-/*
- *
- *  Copyright © 2020 Daniel Emmery (CNRS) 
- * 
- *  Writes arbitrary number of vectors to file.
- *  Requires vector type to have .size() and operator
- * 
- *  GPL 2.0 License
- * 
- */
+#include "context.hpp"
 
-
-#include <filesystem>
 #include <fstream>
-#include <vector>
-#include <cassert>
-#include <type_traits>
+#include <filesystem>
 
-template <typename T, typename = void>
-struct is_write_compatible : std::false_type {};
-
-template <typename T>
-struct is_write_compatible<T, std::void_t<
-    decltype(std::declval<T>().size()),
-    decltype(std::declval<T>().operator[](std::declval<typename T::size_type>()))
-    >> : std::true_type {};
-
-template<template<class> typename... Policies>
-struct Vector_writer : public Policies<Vector_writer<Policies...>>...
+struct Writer
 {
-    std::filesystem::path path;
-
-    Vector_writer() : path{"out.dat"}
+    Writer(std::filesystem::path outpath) : current_path_{outpath}
     {}
 
-    template<typename... T>
-    void
-    write(const T&... out)
-    {
-        static_assert((is_write_compatible<T>() && ...), "Can only pass containers that have .size() and operator[].");
-        (static_cast<Policies<Vector_writer<Policies...>>&>(*this).write(out...), ...);
-    }
+    std::ofstream& get_stream() {if (not stream_.is_open()) stream_.open(current_path_); return stream_;}
+    std::filesystem::path get_path() {return current_path_;}
+    void set_path(std::filesystem::path path) {stream_.close(); current_path_ = path;}
+    void set_filename(const std::string& new_filename) {stream_.close(); current_path_.replace_filename(new_filename);}
+
+private:
+    std::ofstream stream_;
+    std::filesystem::path current_path_;
 };
 
-template<typename U, typename... T>
-size_t
-size_helper(const U& first, const T&...)
+Writer& operator<< (Writer& writer, const IContext_view& view)
 {
-    return first.size();
+    view.serialize(writer.get_stream(), "# ");
+    return writer;
 }
 
-template<typename Derived>
-struct dat
+template<typename T>
+Writer& operator<< (Writer& writer, const T& val)
 {
-    template<typename... T>
-    void
-    write(T&&... out)
-    {
-        auto base = static_cast<Derived&>(*this);
-
-        std::ofstream out_file{base.path};
-
-        assert( (out.size() == ...) );
-
-        for(size_t i = 0 ; i < size_helper(out...) ; ++i)
-        {
-            ((out_file << out[i] << ' ') , ...) << std::endl;
-        }
-
-        out_file.flush();
-    }
-};
+    writer.get_stream() << val;
+    return writer;
+}

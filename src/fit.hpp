@@ -21,7 +21,7 @@ struct Fit
   	{
 		const Time_series::value_type* fitting_data_points;
 		std::tuple<T&...>* free_variables; 
-		ICS_result* driver;
+		ICS_result* result;
 	};
 
 	using Target_func = int(*)(const gsl_vector*, void*, gsl_vector*);
@@ -81,10 +81,10 @@ struct Fit
 			((elems = gsl_vector_get (x, i), ++i), ...);
     	}, *userdata.free_variables);
 
-		userdata.driver->context_->apply_physics();
-		userdata.driver->context_->check_nan();
-		
-    	auto res = userdata.driver->result();
+		userdata.result->context_->apply_physics();
+    	userdata.result->calculate();
+
+		auto res = userdata.result->get_values();
 
     	for (size_t j = 0; j < userdata.fitting_data_points->size(); j++)
     	{
