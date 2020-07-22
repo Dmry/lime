@@ -21,8 +21,10 @@
 #include <boost/test/tools/output_test_stream.hpp>
 
 #include "../src/context.hpp"
+#include "../src/checks.hpp"
 
 #include <array>
+#include <numeric>
 #include <filesystem>
 #include <algorithm>
 #include <memory>
@@ -269,4 +271,80 @@ BOOST_FIXTURE_TEST_CASE(
 
     BOOST_TEST( !out.is_empty( false ) );
     BOOST_TEST( out.is_equal("Z 5\nM_e 4\nN 2\nN_e 3\nG_f_normed 9\ntau_e 10\ntau_monomer 14\nG_e 8\ntau_r 12\ntau_d_0 11\ntau_df 13\n"));
+}
+
+BOOST_FIXTURE_TEST_CASE(
+    context_check_view_sane_passes,
+    Test_context,
+    * boost::unit_test::label("context")
+    * boost::unit_test::label("checks"))
+{
+    using namespace checks;
+    using namespace checks::policies;
+    Context_view<test_keys> view(ctx);
+    BOOST_REQUIRE_NO_THROW(check<zero<throws>>(&view));
+    BOOST_REQUIRE_NO_THROW(check<is_nan<throws>>(&view));
+}
+
+BOOST_FIXTURE_TEST_CASE(
+    context_check_view_only_subset_checked,
+    Test_context,
+    * boost::unit_test::label("context")
+    * boost::unit_test::label("checks"))
+{
+    using namespace checks;
+    using namespace checks::policies;
+    Context_view<test_keys> view(ctx);
+
+    ctx.a = 0; // not part of the test keys, so shouldn't throw
+    ctx.b = std::numeric_limits<double>::quiet_NaN();
+
+    BOOST_REQUIRE_NO_THROW(check<zero<throws>>(&view));
+    BOOST_REQUIRE_NO_THROW(check<is_nan<throws>>(&view));
+}
+
+BOOST_FIXTURE_TEST_CASE(
+    context_check_view_throws,
+    Test_context,
+    * boost::unit_test::label("context")
+    * boost::unit_test::label("checks"))
+{
+    using namespace checks;
+    using namespace checks::policies;
+    Context_view<test_keys> view(ctx);
+
+    ctx.Z = 0; // not part of the test keys, so shouldn't throw
+    ctx.N = std::numeric_limits<double>::quiet_NaN();
+
+    BOOST_REQUIRE_THROW( (check<zero<throws>>(&view)), std::runtime_error);
+    BOOST_REQUIRE_THROW( (check<is_nan<throws>>(&view)), std::runtime_error);
+}
+
+BOOST_AUTO_TEST_CASE(
+    generic_check_sane_passes,
+    * boost::unit_test::label("checks"))
+{
+    using namespace checks;
+    using namespace checks::policies;
+
+    auto tuple = boost::hana::make_tuple(1.0, 2.0, 3.0, 4.0);
+
+    using tuple_t = decltype(tuple);
+
+    BOOST_REQUIRE_NO_THROW( (check<tuple_t, zero<throws>, is_nan<throws>>(tuple)) );
+}
+
+BOOST_AUTO_TEST_CASE(
+    generic_check_throws,
+    * boost::unit_test::label("checks"))
+{
+    using namespace checks;
+    using namespace checks::policies;
+
+    auto tuple = boost::hana::make_tuple(0.0, std::numeric_limits<double>::quiet_NaN());
+
+    using tuple_t = decltype(tuple);
+
+    BOOST_REQUIRE_THROW( (check<tuple_t, zero<throws>>(tuple)), std::runtime_error );
+    BOOST_REQUIRE_THROW( (check<tuple_t, is_nan<throws>>(tuple)), std::runtime_error );
 }

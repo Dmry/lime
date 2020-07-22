@@ -73,7 +73,7 @@ namespace checks
         template<typename T>
         void operator()(T& t) const
         {
-            if (std::abs(t - t) > std::numeric_limits<T>::epsilon())
+            if (std::abs(t) < std::numeric_limits<T>::epsilon())
             {
                 (policies_t::apply("found zero value"), ...);
             }
