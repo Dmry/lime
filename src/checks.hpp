@@ -36,20 +36,20 @@ namespace checks
             }
         };
 
-        struct prints_error : public tag
+        struct prints_warning : public tag
         {
             static void apply(const std::string& msg)
             {
-                BOOST_LOG_TRIVIAL(error) << msg;
+                BOOST_LOG_TRIVIAL(warning) << msg;
             }
         };
 
         template<const std::string& append>
-        struct prints_error_append : public tag
+        struct prints_warning_append : public tag
         {
             static void apply(const std::string& msg)
             {
-                BOOST_LOG_TRIVIAL(error) << msg << " " << append;
+                BOOST_LOG_TRIVIAL(warning) << msg << " " << append;
             }
         };
     }
@@ -75,7 +75,7 @@ namespace checks
         {
             if (std::abs(t) < std::numeric_limits<T>::epsilon())
             {
-                (policies_t::apply("found zero value"), ...);
+                (policies_t::apply("a parameter is set to zero"), ...);
             }
         }
     };
@@ -88,7 +88,7 @@ namespace checks
         {
             if (t < 0.0)
             {
-                (policies_t::apply("found negative value"), ...);
+                (policies_t::apply("a parameter is set to a negative value"), ...);
             }
         }
     };

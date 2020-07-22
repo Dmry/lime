@@ -17,7 +17,7 @@ Async_except* Async_except::get()
 
 void lime_log::print_exception(const std::exception& e, int level)
 {
-    BOOST_LOG_TRIVIAL(error) << std::string(level, ' ') << "exception: " << e.what();
+    BOOST_LOG_TRIVIAL(fatal) << std::string(level, ' ') << "exception: " << e.what();
     try {
         std::rethrow_if_nested(e);
     } catch(const std::exception& e) {
@@ -37,11 +37,13 @@ void lime_log::coloring_formatter(boost::log::record_view const& rec, boost::log
             strm << "\033[32m";
             break;
         case boost::log::trivial::warning:
-            strm << "\033[33m";
+            strm << "\033[33m" << "[WARNING] ";
             break;
         case boost::log::trivial::error:
+            strm << "\033[31m" << "[ERROR] ";
+            break;
         case boost::log::trivial::fatal:
-            strm << "\033[31m";
+            strm << "\033[31m" << "[FATAL] ";
             break;
         default:
             break;

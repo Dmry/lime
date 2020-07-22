@@ -99,6 +99,11 @@ struct result_cmd
 
     ICS_result build_result(Time_series::time_type time)
     {
+        if (c_v <= 0.0)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "cv value set to zero.";
+        }
+
         std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
 
         ICS_result driver(time, builder.get(), CR_impl);
@@ -343,6 +348,7 @@ int main(int argc, char const *argv[])
     catch (const std::exception& err)
     {
         lime_log::print_exception(err);
+        BOOST_LOG_TRIVIAL(fatal) << "Please validate and / or adjust your inputs and try again.";
         exit(1);
     }
 

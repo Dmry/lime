@@ -121,7 +121,7 @@ ICS_context_builder::validate_state()
 
     try
     {
-        check<is_nan<throws>, zero<prints_error_append<location>>>(this->context_view().get());
+        check<is_nan<throws>, zero<prints_warning_append<location>>>(this->context_view().get());
     }
     catch (const std::exception& ex)
     {
