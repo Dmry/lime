@@ -1,5 +1,5 @@
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
-add_executable(lime_test constraint_release.cpp)
+add_executable(lime_test test.cpp)
 
 # Intel TBB
 find_package(TBB)

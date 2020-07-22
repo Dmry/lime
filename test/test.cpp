@@ -22,6 +22,7 @@
 
 #include "../src/context.hpp"
 #include "../src/checks.hpp"
+#include "../src/tube.hpp"
 
 #include <array>
 #include <numeric>
@@ -101,6 +102,7 @@ BOOST_FIXTURE_TEST_CASE(
     * boost::unit_test::label("rubinstein")
     * boost::unit_test::description("Test Rubinstein & Colby method for constraint release against literature data. (doi:10.1063/1.455620)"))
 {
+    BOOST_TEST_INFO("This method uses stochastic sampling and may fail from time to time, while still providing relatively accurate results in production.");
     check_impl("../validation/likhtmanmcleish/figure6_R.dat", constraint_release::impl::RUBINSTEINCOLBY);
 }
 
@@ -301,6 +303,67 @@ BOOST_FIXTURE_TEST_CASE(
 
     BOOST_REQUIRE_NO_THROW(check<zero<throws>>(&view));
     BOOST_REQUIRE_NO_THROW(check<is_nan<throws>>(&view));
+}
+
+BOOST_FIXTURE_TEST_CASE(
+    context_full_reproduction_builder_valid_state,
+    Test_context,
+    * boost::unit_test::label("context")
+    * boost::unit_test::label("checks")
+    * boost::unit_test::label("builders"))
+{
+    // Obiously not suitable production time use of a shared_ptr, _please_ do not use this as an example.
+    // This is only useful because it mirrors the context that's used in all tests to a shared pointer for
+    // the sake of testing the constructor, it makes the object otherwise non-functional.
+    auto ctx_ptr = std::shared_ptr<Context>(&ctx, [](Context *) {});
+
+    Reproduction_context_builder builder(ctx_ptr);
+
+    // The following _is_ the preferred way of calling.
+    builder.gather_physics();
+    builder.initialize();
+    BOOST_REQUIRE_NO_THROW( builder.validate_state() );
+}
+
+BOOST_AUTO_TEST_CASE(
+    context_minimal_reproduction_builder_valid_state,
+    * boost::unit_test::label("context")
+    * boost::unit_test::label("checks")
+    * boost::unit_test::label("builders"))
+{
+    auto minimal_ctx = std::make_shared<Context>();
+
+    minimal_ctx->Z = 1.0;
+    minimal_ctx->tau_e = 2.0;
+
+    Reproduction_context_builder builder(minimal_ctx);
+
+    builder.gather_physics();
+    builder.initialize();
+    BOOST_REQUIRE_NO_THROW( builder.validate_state() );
+}
+
+BOOST_AUTO_TEST_CASE(
+    context_minimal_ICS_builder_valid_state,
+    * boost::unit_test::label("context")
+    * boost::unit_test::label("checks")
+    * boost::unit_test::label("builders"))
+{
+    auto minimal_ctx = std::make_shared<Context>();
+    auto minimal_sys = std::make_shared<System>();
+
+    minimal_sys->T = 1.0;
+    minimal_sys->rho = 0.68;
+
+    minimal_ctx->N = 1.0;
+    minimal_ctx->N_e = 2.0;
+    minimal_ctx->tau_monomer = 3.0;
+
+    ICS_context_builder builder(minimal_sys, minimal_ctx);
+
+    builder.gather_physics();
+    builder.initialize();
+    BOOST_REQUIRE_NO_THROW( builder.validate_state() );
 }
 
 BOOST_FIXTURE_TEST_CASE(

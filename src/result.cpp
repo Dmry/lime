@@ -55,7 +55,7 @@ Derivative_result::calculate()
 {
     if (!context_)
     {
-        throw "No context for Derivative result!";
+        throw "No context for derivative result!";
     }
 
     auto wrapper = [this](const double& t) {return (function_)(t);};

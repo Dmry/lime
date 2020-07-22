@@ -169,7 +169,7 @@ Reproduction_context_builder::validate_state()
     }
     catch (const std::exception& ex)
     {
-        std::throw_with_nested(std::runtime_error("in Reproduction context builder"));
+        std::throw_with_nested(std::runtime_error("in reproduction context builder"));
     }
 }
 
