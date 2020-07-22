@@ -103,7 +103,7 @@ struct result_cmd
 
         ICS_result driver(time, builder.get(), CR_impl);
 
-        view = builder->get_view();
+        view = builder->context_view();
 
         driver.CR->c_v_ = c_v;
 

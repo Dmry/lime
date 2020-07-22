@@ -93,7 +93,6 @@ public:
     const Context& context_;
 };
 
-
 template<const auto& keys>
 class Context_view : public IContext_view
 {
@@ -146,7 +145,7 @@ class IContext_builder
         virtual void gather_physics() = 0;
         virtual void initialize() = 0;
         virtual void validate_state() = 0;
-        virtual std::unique_ptr<IContext_view> get_view() = 0;
+        virtual std::unique_ptr<IContext_view> context_view() = 0;
 
         void set_context(std::shared_ptr<Context>);
         std::shared_ptr<Context> get_context();
@@ -178,7 +177,7 @@ class ICS_context_builder : public IContext_builder
         void gather_physics() override;
         void initialize() override;
         void validate_state() override;
-        std::unique_ptr<IContext_view> get_view() override;
+        std::unique_ptr<IContext_view> context_view() override;
 
     protected:
         std::shared_ptr<System> system_;
@@ -199,7 +198,7 @@ class Reproduction_context_builder : public IContext_builder
         Reproduction_context_builder();
         Reproduction_context_builder(std::shared_ptr<Context>);
 
-        std::unique_ptr<IContext_view> get_view() override;
+        std::unique_ptr<IContext_view> context_view() override;
         void gather_physics() override;
         void initialize() override;
         void validate_state() override;

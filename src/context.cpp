@@ -14,7 +14,16 @@ void Context::add_physics(Physics_ptr physics)
 void Context::apply_physics()
 {
     for (auto& calculation : physics_)
-        calculation->apply(*this);
+    {
+        if(calculation != nullptr)
+        {
+            calculation->apply(*this);
+        }
+        else
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Tried to execute expired physics. Results may be incomplete.";
+        }
+    }
 
     notify_computes();
 }
@@ -37,6 +46,10 @@ void Context::notify_computes()
         if (compute != nullptr)
         {
             compute->update(*this);
+        }
+        else
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Tried to execute expired compute. Results may be incomplete.";
         }
     }
 }
@@ -108,7 +121,7 @@ ICS_context_builder::validate_state()
 
     try
     {
-        check<is_nan<throws>, zero<prints_error_append<location>>>(this->get_view().get());
+        check<is_nan<throws>, zero<prints_error_append<location>>>(this->context_view().get());
     }
     catch (const std::exception& ex)
     {
@@ -117,7 +130,7 @@ ICS_context_builder::validate_state()
 }
 
 std::unique_ptr<IContext_view>
-ICS_context_builder::get_view()
+ICS_context_builder::context_view()
 {
     return std::make_unique<Context_view<ICS_keys>>(*context_);
 }
@@ -152,7 +165,7 @@ Reproduction_context_builder::validate_state()
 
     try
     {
-        check<is_nan<throws>, zero<throws>>(this->get_view().get());
+        check<is_nan<throws>, zero<throws>>(this->context_view().get());
     }
     catch (const std::exception& ex)
     {
@@ -161,7 +174,7 @@ Reproduction_context_builder::validate_state()
 }
 
 std::unique_ptr<IContext_view>
-Reproduction_context_builder::get_view()
+Reproduction_context_builder::context_view()
 {
     return std::make_unique<Context_view<Reproduction_keys>>(*context_);
 }

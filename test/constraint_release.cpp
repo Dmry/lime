@@ -7,12 +7,20 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/included/unit_test.hpp>
 
+/// Constraint release
+
 #include "../src/constraint_release/constraint_release.hpp"
 #include "../src/constraint_release/heuzey.hpp"
 #include "../src/constraint_release/rubinsteincolby.hpp"
 #include "../src/time_series.hpp"
 #include "../src/file_reader.hpp"
 #include "../src/postprocess.hpp"
+
+/// Context
+
+#include <boost/test/tools/output_test_stream.hpp>
+
+#include "../src/context.hpp"
 
 #include <array>
 #include <filesystem>
@@ -102,4 +110,163 @@ BOOST_FIXTURE_TEST_CASE(
     * boost::unit_test::description("Test Heuzey method for constraint release against literature data. (doi:10.1002/app.20881)"))
 {
 	check_impl("../validation/heuzey/figure5_R.dat", constraint_release::impl::HEUZEY);
+}
+
+struct Test_physics : public Physics
+{
+    void apply(Context& ctx) override
+    {
+        ctx.Z = ctx.G_e / ctx.N;
+    }
+};
+
+struct Test_physics_self_divide : public Physics
+{
+    void apply(Context& ctx) override
+    {
+        ctx.Z = ctx.Z / ctx.N;
+    }
+};
+
+struct Test_context
+{
+    Test_context()
+    : ctx{Context()}
+    {
+        ctx.M = 1.0; ctx.N = 2.0; ctx.N_e = 3.0; ctx.M_e = 4.0; ctx.Z = 5.0; ctx.a = 6.0;
+        ctx.b = 7.0; ctx.G_e = 8.0; ctx.G_f_normed = 9.0; ctx.tau_e = 10.0; ctx.tau_d_0 = 11.0;
+        ctx.tau_r = 12.0; ctx.tau_df = 13.0; ctx.tau_monomer = 14.0;
+    }
+
+    Context ctx;
+};
+
+BOOST_FIXTURE_TEST_CASE(
+    context_add_physics,
+    Test_context,
+    * boost::unit_test::label("context"))
+{
+    std::unique_ptr<Physics> physics_two = std::make_unique<Test_physics>();
+    ctx.add_physics(std::move(physics_two));
+    ctx.apply_physics();
+
+    BOOST_TEST(ctx.Z == 4.0);
+
+    std::unique_ptr<Physics> physics_three = std::make_unique<Test_physics_self_divide>();
+    ctx.add_physics(std::move(physics_three));
+    ctx.apply_physics();
+    BOOST_TEST(ctx.Z == 2.0);
+}
+
+BOOST_FIXTURE_TEST_CASE(
+    context_nullptr_physics,
+    Test_context,
+    * boost::unit_test::label("context"))
+{
+    std::unique_ptr<Physics> physics = nullptr;
+    ctx.add_physics(std::move(physics));
+    BOOST_REQUIRE_NO_THROW(ctx.apply_physics());
+}
+
+BOOST_FIXTURE_TEST_CASE(
+    context_add_physics_in_place,
+    Test_context,
+    * boost::unit_test::label("context"))
+{
+    ctx.add_physics_in_place<Test_physics>();
+    ctx.apply_physics();
+
+    BOOST_TEST(ctx.Z == 4.0);
+}
+
+struct Test_compute : public Compute
+{
+    bool success_;
+    bool validated_;
+
+    Test_compute() : success_{false}, validated_{false} {}
+
+    virtual void update(const Context& ctx) override
+    {
+        success_ = true;
+        validate_update(ctx);
+    };
+
+    virtual void validate_update(const Context&) const override
+    {
+        if (success_ != true)
+            throw std::runtime_error("validate_update failed.");
+    };
+};
+
+BOOST_FIXTURE_TEST_CASE(
+    context_computes_empty_physics,
+    Test_context,
+    * boost::unit_test::label("context"))
+{
+    Test_compute compute;
+
+    ctx.attach_compute(&compute);
+
+    ctx.apply_physics();
+
+    BOOST_TEST(compute.success_ == true);
+}
+
+
+BOOST_FIXTURE_TEST_CASE(
+    context_nullptr_compute_empty_physics,
+    Test_context,
+    * boost::unit_test::label("context"))
+{
+    Test_compute compute;
+
+    ctx.attach_compute(nullptr);
+
+    BOOST_REQUIRE_NO_THROW(ctx.apply_physics());
+}
+
+BOOST_FIXTURE_TEST_CASE(
+    context_computes_after_physics,
+    Test_context,
+    * boost::unit_test::label("context"))
+{
+    ctx.add_physics_in_place<Test_physics>();
+
+    Test_compute compute;
+
+    ctx.attach_compute(&compute);
+
+    ctx.apply_physics();
+
+    BOOST_TEST(compute.success_ == true);
+}
+
+constexpr auto test_keys = boost::hana::make_tuple(
+    LIME_KEY(Z),
+    LIME_KEY(M_e),
+    LIME_KEY(N),
+    LIME_KEY(N_e),
+    LIME_KEY(G_f_normed),
+    LIME_KEY(tau_e),
+    LIME_KEY(tau_monomer),
+    LIME_KEY(G_e),
+    LIME_KEY(tau_r),
+    LIME_KEY(tau_d_0),
+    LIME_KEY(tau_df)
+);
+
+BOOST_FIXTURE_TEST_CASE(
+    context_view_stream_filter,
+    Test_context,
+    * boost::unit_test::label("context"))
+{
+    using boost::test_tools::output_test_stream;
+
+    output_test_stream out;
+    Context_view<test_keys> view(ctx);
+    out << view;
+
+    BOOST_TEST( !out.is_empty( false ) );
+    BOOST_TEST( out.is_equal("Z 5\nM_e 4\nN 2\nN_e 3\nG_f_normed 9\ntau_e 10\ntau_monomer 14\nG_e 8\ntau_r 12\ntau_d_0 11\ntau_df 13\n"));
 }
