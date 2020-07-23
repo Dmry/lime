@@ -6,6 +6,15 @@ add_subdirectory(constraint_release)
 find_package(GSL REQUIRED)
 set(LIBS GSL::gsl)
 
+# Eigen
+find_package(Eigen3 REQUIRED)
+set(LIBS ${LIBS} ${Eigen_LIBRARIES})
+
+# Ceres
+find_package(Ceres REQUIRED)
+set(LIBS ${LIBS} ${Ceres_LIBRARIES})
+include_directories(${CERES_INCLUDE_DIRS})
+
 # Boost
 find_package(Boost COMPONENTS log log_setup REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
