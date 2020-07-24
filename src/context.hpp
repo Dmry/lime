@@ -82,7 +82,7 @@ private:
     virtual std::ostream& serialize(std::ostream&, const char* prefix = "\0") const = 0;
 
 public:
-    explicit IContext_view(const Context& ctx) : context_{ctx} {}
+    explicit IContext_view(const Context& ctx);
     virtual ~IContext_view() = default;
     virtual void accept(std::function<void(double&)> f) const = 0;
 

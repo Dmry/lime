@@ -123,7 +123,7 @@ ICS_context_builder::validate_state()
     {
         check<is_nan<throws>, zero<prints_warning_append<location>>>(this->context_view().get());
     }
-    catch (const std::exception& ex)
+    catch (const std::exception&)
     {
         std::throw_with_nested(std::runtime_error(location));
     }
@@ -167,7 +167,7 @@ Reproduction_context_builder::validate_state()
     {
         check<is_nan<throws>, zero<throws>>(this->context_view().get());
     }
-    catch (const std::exception& ex)
+    catch (const std::exception&)
     {
         std::throw_with_nested(std::runtime_error("in reproduction context builder"));
     }
@@ -178,3 +178,7 @@ Reproduction_context_builder::context_view()
 {
     return std::make_unique<Context_view<Reproduction_keys>>(*context_);
 }
+
+IContext_view::IContext_view(const Context &ctx)
+: context_{ctx}
+{}
