@@ -59,7 +59,9 @@ RUB_constraint_release::validate_update(const Context& ctx) const
 
     try
     {
-        check<decltype(args), is_nan<throws>, zero<throws>>(args);
+        static const std::string location = "in Rubinstein & Colby CR.";
+        check<decltype(args),
+              is_nan<throws>, zero<throws>, negative<prints_warning_append<location>>>(args);
     }
     catch (const std::exception& ex)
     {
