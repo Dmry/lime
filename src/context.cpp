@@ -117,7 +117,7 @@ ICS_context_builder::validate_state()
     using namespace checks;
     using namespace checks::policies;
 
-    static std::string location("in ICS context builder");
+    static const std::string location("in ICS context builder");
 
     try
     {

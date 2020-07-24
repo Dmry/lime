@@ -1,5 +1,4 @@
-#ifndef FACTORY_H
-#define FACTORY_H
+#pragma once
 
 #include <memory>
 #include <map>
@@ -62,4 +61,3 @@ public:
       return std::make_unique<Derived>(args...);
    }
 };
-#endif
