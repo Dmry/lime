@@ -73,6 +73,8 @@ RUB_constraint_release::update(const Context& ctx)
     validate_update(ctx);
 
     const double E_star = e_star(ctx.Z, ctx.tau_e, ctx.G_f_normed);
+
+    if (realization_size_ != static_cast<size_t>(ctx.Z))
     generate(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, E_star, ctx.Z);
 }
 
