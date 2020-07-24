@@ -2,6 +2,9 @@
 #include <boost/tuple/tuple.hpp>
 #define BOOST_LOG_DYN_LINK 1
 
+#include <glog/logging.h>
+#include <ceres/ceres.h>
+
 #include "../inc/args.hpp"
 
 #include "file_reader.hpp"
@@ -275,6 +278,91 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
         BOOST_LOG_TRIVIAL(info) << *view << "cv: " << result.CR->c_v_;
 
         writer << *view << result;
+    }
+};
+
+using ceres::CENTRAL;
+using ceres::CostFunction;
+using ceres::NumericDiffCostFunction;
+using ceres::Problem;
+using ceres::Solve;
+using ceres::Solver;
+
+struct cerestest : lime::command<cerestest>, cmd_takes_file_input, cmd_writes_output_file, result_cmd
+{
+    struct ExponentialResidual
+    {
+        ExponentialResidual(double t, double g)
+            : t_(t), g_(g) {}
+
+        template <typename T>
+        bool operator()(const T *const N_e, const T *const tau_monomer, T *residual) const
+        {
+          //  residual[0] = (T(gt_) - f_g(t_))/T(gt_);
+            return true;
+        }
+
+    private:
+        // Observations for a sample.
+        const double t_;
+        const double g_;
+    };
+
+    cerestest(){}
+
+    static const char *help()
+    {
+        return "Testing the ceres-solver.";
+    }
+
+    template <class F>
+    void parse(F f)
+    {
+        cmd_takes_file_input::parse(f);
+        result_cmd::parse(f);
+        cmd_writes_output_file::parse(f);
+    }
+
+    void run()
+    {
+/*         auto input = get_file_contents();
+
+        auto result = build_result(input.get_time_range());
+
+        Fit<double, double> fit_driver(result.context_->N_e, result.context_->tau_monomer);
+
+        fit_driver.fit(input.get_values(), result, wt_pow);
+
+        BOOST_LOG_TRIVIAL(info) << *view << "cv: " << result.CR->c_v_;
+
+        writer << *view << result;
+ */
+        //////////////////////////////////////////////////////////////////////////////////////
+/* 
+        const char* argz = "lime";
+        google::InitGoogleLogging(argz);
+
+        // The variable to solve for with its initial value.
+        double initial_x = 5.0;
+        double x = initial_x;
+
+        // Build the problem.
+        Problem problem;
+
+        CostFunction *cost_function =
+            new NumericDiffCostFunction<CostFunctor, CENTRAL, 1, 1>(new CostFunctor);
+        problem.AddResidualBlock(cost_function, NULL, &x);
+
+        // Run the solver!
+        Solver::Options options;
+        options.linear_solver_type = ceres::DENSE_QR;
+        options.minimizer_progress_to_stdout = true;
+        Solver::Summary summary;
+        Solve(options, &problem, &summary);
+
+        std::cout << summary.BriefReport() << "\n";
+        std::cout << "x : " << initial_x
+                  << " -> " << x << "\n"; */
     }
 };
 

@@ -12,7 +12,7 @@ set(LIBS ${LIBS} ${Eigen_LIBRARIES})
 
 # Ceres
 find_package(Ceres REQUIRED)
-set(LIBS ${LIBS} ${Ceres_LIBRARIES})
+set(LIBS ${LIBS} ${CERES_LIBRARIES})
 include_directories(${CERES_INCLUDE_DIRS})
 
 # Boost

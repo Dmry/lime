@@ -82,15 +82,3 @@ struct Time_functor
     virtual Time_series operator()(const Time_series::time_type&) const = 0;
     virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) const = 0;
 };
-
-struct Time_series_functional : public Time_series
-{
-    Time_series_functional(Time_series::time_type time_range)
-    :   Time_series(time_range)
-    {}
-    
-    using functional_type = std::function<Time_series::value_primitive (Time_series::time_primitive)>;
-
-    // Provides a generalized interface for all time functionals
-    virtual functional_type time_functional(const Context&) = 0;
-};
