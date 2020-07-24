@@ -5,7 +5,6 @@
 #include <boost/hana/keys.hpp>
 #include <boost/hana/string.hpp>
 #include <boost/hana/tuple.hpp>
-#define BOOST_HANA_CONFIG_ENABLE_STRING_UDL
 
 #define LIME_KEY(x) BOOST_HANA_STRING(#x)
 
@@ -15,10 +14,9 @@
 #include <memory>
 #include <functional>
 
-class Writer;
-
 struct Physics
 {
+    virtual ~Physics() = default;
     virtual void apply(struct Context&) = 0;
 };
 
@@ -70,6 +68,7 @@ struct Context
 
 struct Compute
 {
+    virtual ~Compute() = default;
     virtual void update(const Context& ctx) = 0;
     virtual void validate_update(const Context& ctx) const = 0;
 };
@@ -83,12 +82,12 @@ private:
     virtual std::ostream& serialize(std::ostream&, const char* prefix = "\0") const = 0;
 
 public:
-    explicit IContext_view(const Context& ctx) : context_{ctx} {};
+    explicit IContext_view(const Context& ctx) : context_{ctx} {}
     virtual ~IContext_view() = default;
     virtual void accept(std::function<void(double&)> f) const = 0;
 
     friend std::ostream& operator << (std::ostream& stream, const IContext_view& view);
-    friend Writer& operator << (struct Writer& stream, const IContext_view& view);
+    friend struct Writer& operator << (struct Writer& stream, const IContext_view& view);
 
     const Context& context_;
 };
@@ -140,6 +139,7 @@ class IContext_builder
 {
     public:
         IContext_builder();
+        virtual ~IContext_builder() = default;
         IContext_builder(std::shared_ptr<Context>);
 
         virtual void gather_physics() = 0;

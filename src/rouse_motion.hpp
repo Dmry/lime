@@ -1,19 +1,27 @@
 #pragma once
 
-#include <boost/phoenix/function/adapt_function.hpp>
-
 #include "context.hpp"
 #include "utilities.hpp"
 
-struct Rouse_motion
+struct Rouse_motion : private Summation<double, double>
 {
+    Rouse_motion(double Z, double tau_r, double N)
+        : Summation<double, double>(1.0, Z - 1.0, 1.0,
+                                    [this](const double &p, const double &t) {
+                                        return std::exp(-2.0 * square(p) * t / tau_r_);
+                                    }),
+          Z_{Z}, tau_r_{tau_r}, N_{N}
+    {}
+
     double operator() (double t)
     {
-        Summation<double> sum{Z, N, 1.0, [this,& t] (const double& p)->double {return std::exp(-2.0*square(p)*t/tau_r);}};
-        return sum() / Z;
+        start = Z_;
+        end = N_;
+        auto sum = Summation<double, double>::operator()(t);
+        return sum / Z_;
     }
 
-    double Z;
-    double tau_r;
-    double N;
+    double Z_;
+    double tau_r_;
+    double N_;
 };

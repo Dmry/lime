@@ -28,6 +28,7 @@ class System_physics : public Physics
 {
     public:
         System_physics(System_ptr system) : system_{system} {}
+        virtual ~System_physics() = default;
 
         virtual void apply(Context&) = 0;
 
@@ -42,7 +43,7 @@ struct G_f_normed : public Physics
     {
         double Gf = 1.0 - (1.69/std::sqrt(ctx.Z)) + (2.0/ctx.Z) - (1.24/std::pow(ctx.Z, 3.0/2.0));
         ctx.G_f_normed = 8.0*Gf/square(pi);
-    };
+    }
 };
 
 // Depends: N, N_e

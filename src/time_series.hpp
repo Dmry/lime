@@ -47,6 +47,7 @@ struct Time_series
     Time_series(time_type time_range);
     Time_series(time_type time_range, value_type values);
     Time_series(const Time_series& other_time_series);
+    virtual ~Time_series() = default;
 
     boost::iterators::zip_iterator<boost::tuples::tuple<Time_range::base::iterator, Time_series::value_type::iterator>> time_zipped_begin();
     boost::iterators::zip_iterator<boost::tuples::tuple<Time_range::base::iterator, Time_series::value_type::iterator>> time_zipped_end();
@@ -79,18 +80,8 @@ struct Time_functor
 {
     using function_t = std::function<Time_series::value_primitive(Time_series::time_primitive)>;
 
+    virtual ~Time_functor() = default;
+
     virtual Time_series operator()(const Time_series::time_type&) const = 0;
     virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) const = 0;
-};
-
-struct Time_series_functional : public Time_series
-{
-    Time_series_functional(Time_series::time_type time_range)
-    :   Time_series(time_range)
-    {}
-    
-    using functional_type = std::function<Time_series::value_primitive (Time_series::time_primitive)>;
-
-    // Provides a generalized interface for all time functionals
-    virtual functional_type time_functional(const Context&) = 0;
 };

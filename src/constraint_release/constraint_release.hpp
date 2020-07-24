@@ -12,7 +12,9 @@ struct IConstraint_release : public Time_functor, public Compute
     IConstraint_release(double c_v)
     :   Time_functor{},
         c_v_{c_v}
-    {};
+    {}
+
+    virtual ~IConstraint_release() = default;
 
     virtual Time_series operator()(const Time_series::time_type&) const = 0;
     virtual Time_series::value_primitive operator()(const Time_series::time_primitive&) const = 0;

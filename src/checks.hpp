@@ -30,7 +30,7 @@ namespace checks
 
         struct throws : public tag
         {
-            static void apply(const std::string& msg)
+            static void apply [[noreturn]] (const std::string &msg)
             {
                 throw std::runtime_error(msg);
             }

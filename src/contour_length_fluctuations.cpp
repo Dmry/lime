@@ -61,7 +61,7 @@ Contour_length_fluctuations::validate_update(const Context& ctx) const
 
     try
     {
-        static const std::string location = "in CLF.";
+        static const std::string location = "in CLF update";
         check<decltype(args),
               is_nan<throws>, zero<throws>, negative<prints_warning_append<location>>>(args);
     }
