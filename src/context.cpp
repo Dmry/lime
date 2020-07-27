@@ -67,6 +67,9 @@ IContext_builder::IContext_builder(std::shared_ptr<Context> context)
 :   context_{context}
 {}
 
+IContext_builder::~IContext_builder()
+{};
+
 void
 IContext_builder::set_context(std::shared_ptr<Context> context)
 {
@@ -104,6 +107,19 @@ ICS_context_builder::gather_physics()
     context_->add_physics_in_place<Tau_d_0>();
     context_->add_physics_in_place<Tau_df>();
 }
+
+constexpr auto ICS_keys = boost::hana::make_tuple(
+    LIME_KEY(Z),
+    LIME_KEY(M_e),
+    LIME_KEY(N),
+    LIME_KEY(N_e),
+    LIME_KEY(G_f_normed),
+    LIME_KEY(tau_e),
+    LIME_KEY(tau_monomer),
+    LIME_KEY(G_e),
+    LIME_KEY(tau_r),
+    LIME_KEY(tau_d_0),
+    LIME_KEY(tau_df));
 
 void
 ICS_context_builder::initialize()
@@ -150,6 +166,13 @@ Reproduction_context_builder::gather_physics()
     context_->add_physics_in_place<Tau_d_0>();
     context_->add_physics_in_place<Tau_df>();
 }
+
+constexpr auto Reproduction_keys = boost::hana::make_tuple(
+    LIME_KEY(Z),
+    LIME_KEY(G_f_normed),
+    LIME_KEY(tau_e),
+    LIME_KEY(tau_d_0),
+    LIME_KEY(tau_df));
 
 void
 Reproduction_context_builder::initialize()

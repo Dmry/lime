@@ -65,7 +65,7 @@ Contour_length_fluctuations::validate_update(const Context& ctx) const
         check<decltype(args),
               is_nan<throws>, zero<throws>, negative<prints_warning_append<location>>>(args);
     }
-    catch (const std::exception& ex)
+    catch (const std::exception&)
     {
         std::throw_with_nested(std::runtime_error("in CLF update"));
     }
@@ -110,7 +110,7 @@ Contour_length_fluctuations::integral_result(double lower_bound, double t)
         double termination = std::sqrt(std::numeric_limits<double>::epsilon());
         res = integrator.integrate(f, lower_bound , std::numeric_limits<double>::infinity(), termination, nullptr, nullptr, nullptr);
     }
-    catch (const std::exception& ex)
+    catch (const std::exception&)
     {
         Async_except::get()->ep = std::current_exception();
     }

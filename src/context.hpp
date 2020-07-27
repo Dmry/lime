@@ -3,7 +3,6 @@
 #include <boost/hana.hpp>
 #include <boost/hana/define_struct.hpp>
 #include <boost/hana/keys.hpp>
-#include <boost/hana/string.hpp>
 #include <boost/hana/tuple.hpp>
 
 #define LIME_KEY(x) BOOST_HANA_STRING(#x)
@@ -139,7 +138,7 @@ class IContext_builder
 {
     public:
         IContext_builder();
-        virtual ~IContext_builder() = default;
+        virtual ~IContext_builder();
         IContext_builder(std::shared_ptr<Context>);
 
         virtual void gather_physics() = 0;
@@ -153,20 +152,6 @@ class IContext_builder
     protected:
         std::shared_ptr<Context> context_;
 };
-
-constexpr auto ICS_keys = boost::hana::make_tuple(
-    LIME_KEY(Z),
-    LIME_KEY(M_e),
-    LIME_KEY(N),
-    LIME_KEY(N_e),
-    LIME_KEY(G_f_normed),
-    LIME_KEY(tau_e),
-    LIME_KEY(tau_monomer),
-    LIME_KEY(G_e),
-    LIME_KEY(tau_r),
-    LIME_KEY(tau_d_0),
-    LIME_KEY(tau_df)
-);
 
 class ICS_context_builder : public IContext_builder
 {
@@ -182,14 +167,6 @@ class ICS_context_builder : public IContext_builder
     protected:
         std::shared_ptr<System> system_;
 };
-
-constexpr auto Reproduction_keys = boost::hana::make_tuple(
-    LIME_KEY(Z),
-    LIME_KEY(G_f_normed),
-    LIME_KEY(tau_e),
-    LIME_KEY(tau_d_0),
-    LIME_KEY(tau_df)
-);
 
 class Reproduction_context_builder : public IContext_builder
 {
