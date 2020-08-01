@@ -1,6 +1,10 @@
 #pragma once
 
-#include <boost/math/differentiation/finite_difference.hpp>
+#ifdef BOOST_DIFFERENTIATION
+    #include <boost/math/differentiation/finite_difference.hpp>
+#else
+    #include <boost/math/tools/numerical_differentiation.hpp>
+#endif
 
 #include "time_series.hpp"
 #include "parallel_policy.hpp"
@@ -51,12 +55,16 @@ T NRMSE_average(const std::vector<T>& fit, const std::vector<T>& original)
 template<typename Functor_t>
 Time_series derivative(const Functor_t& func, const Time_series::time_type& time_range)
 {
+
+#ifdef BOOST_DIFFERENTIATION
     using namespace boost::math::differentiation;
+#else
+    using namespace boost::math::tools;
+#endif
 
     Time_series result(time_range);
 
-    std::transform(exec_policy, time_range->begin(), time_range->end(), result.begin(), [&func](const Time_series::time_primitive& t)
-    {
+    std::transform(exec_policy, time_range->begin(), time_range->end(), result.begin(), [&func](const Time_series::time_primitive &t) {
         return finite_difference_derivative<Functor_t, Time_series::time_primitive, 8>(func, t);
     });
 

@@ -11,6 +11,9 @@ find_package(Boost COMPONENTS log log_setup REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 set(LIBS ${LIBS} ${Boost_LIBRARIES} Boost::boost)
 add_definitions(-DBOOST_LOG_DYN_LINK)
+if(Boost_VERSION_MINOR >= 70)
+  add_definitions(-DBOOST_DEFFERENTIATION)
+endif()
 
 set(LIBS ${LIBS} stdc++)
 
