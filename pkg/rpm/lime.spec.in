@@ -31,7 +31,7 @@ mv "@CMAKE_CURRENT_BINARY_DIR@/_CPack_Packages/Linux/RPM/tmpBBroot" $RPM_BUILD_R
 %files
 %defattr(-,root,root,-)
 @CPACK_PACKAGING_INSTALL_PREFIX@/@LIB_INSTALL_DIR@/*
-@CPACK_PACKAGING_INSTALL_PREFIX@/bin/my_project
+@CPACK_PACKAGING_INSTALL_PREFIX@/bin/lime
 
 %changelog
 * Sat Aug 1 2020 Daniël Emmery <daniel@dmry.nl> @CPACK_PACKAGE_VERSION@ - @CPACK_PACKAGE_RELEASE@
