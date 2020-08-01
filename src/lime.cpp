@@ -339,8 +339,7 @@ int main(int argc, char const *argv[])
 #if BOOST_VERSION >= 107000
     log::add_console_log(std::cout, log::keywords::format = lime_log::coloring_formatter);
 #else
-    auto sink = log::add_console_log(std::cout);
-    sink->set_formatter(lime_log::coloring_formatter);
+    log::add_console_log(std::cout);
 #endif
     log::core::get()->set_filter(log::trivial::severity >= log::trivial::info);
 
