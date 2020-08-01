@@ -37,7 +37,7 @@ file(GLOB_RECURSE src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp )
 list(REMOVE_ITEM src ${lime_SOURCE_DIR}/lime.cpp)
 
 add_library(lime_static STATIC ${src})
-target_link_libraries(lime_static ${LIBS})
+target_link_libraries(lime_static ${LIBS} "m")
 
 ### EXECUTABLE ###
 add_executable(lime lime.cpp)
@@ -52,3 +52,5 @@ endif()
 if(CMAKE_THREAD_LIBS_INIT)
   target_link_libraries(lime "${CMAKE_THREAD_LIBS_INIT}")
 endif()
+
+install(TARGETS lime DESTINATION bin)
