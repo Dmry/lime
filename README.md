@@ -14,10 +14,32 @@ Currently only compiles on linux. Windows users should use the Docker version.
 
 ## Compiling from source
 
+### Requirements
+
+#### Fedora
+```
+sudo yum install gcc git g++ cmake make boost-devel gsl-devel tbb-devel
+```
+
+#### Arch linux
+```
+sudo pacman -S gcc git g++ cmake make boost gsl tbb
+```
+
+### Compiling
 ```
 git clone https://github.com/Dmry/lime.git
 mkdir lime/build && cd "$_"
 cmake ..
 make lime
 make install
+```
+
+### Packaging
+
+#### Fedora
+Assuming you have followed the instructions under 'Requirements' and 'Compiling', from the 'build' directory:
+```
+sudo yum install rpm-build
+cpack
 ```

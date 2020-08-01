@@ -336,7 +336,11 @@ void ics_terminate() {
 int main(int argc, char const *argv[])
 {
     namespace log = boost::log;
+#if BOOST_VERSION >= 107000
     log::add_console_log(std::cout, log::keywords::format = lime_log::coloring_formatter);
+#else
+    log::add_console_log(std::cout);
+#endif
     log::core::get()->set_filter(log::trivial::severity >= log::trivial::info);
 
     std::set_terminate (ics_terminate);
