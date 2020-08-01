@@ -38,7 +38,7 @@ make install
 ### Packaging
 
 #### Fedora
-Assuming you have followed the instructions under 'Compiling from source', from the 'build' directory:
+Assuming you have followed the instructions under 'Requirements' and 'Compiling', from the 'build' directory:
 ```
 sudo yum install rpm-build
 cpack
