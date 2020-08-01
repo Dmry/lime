@@ -3,11 +3,11 @@ add_subdirectory(constraint_release)
 ### DEPENDENCIES ###
 
 # GSL
-find_package(GSL REQUIRED)
+find_package(GSL 2.4 REQUIRED)
 set(LIBS GSL::gsl)
 
 # Boost
-find_package(Boost COMPONENTS log log_setup REQUIRED)
+find_package(Boost 1.66.0 COMPONENTS log log_setup REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 set(LIBS ${LIBS} ${Boost_LIBRARIES} Boost::boost)
 add_definitions(-DBOOST_LOG_DYN_LINK)
@@ -15,7 +15,7 @@ add_definitions(-DBOOST_LOG_DYN_LINK)
 set(LIBS ${LIBS} stdc++)
 
 # Intel TBB
-find_package(TBB)
+find_package(TBB 2018)
 if(TBB_FOUND)
   add_definitions(-DRUN_PARALLEL)
   set(LIBS ${LIBS} tbb)

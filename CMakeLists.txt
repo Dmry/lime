@@ -30,6 +30,8 @@ add_subdirectory(inc)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 include_directories(${CMAKE_MODULE_PATH})
 
+### PACKAGING ###
+
 set(CPACK_PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
 set(CPACK_GENERATOR "RPM")
 set(CPACK_PACKAGE_NAME "Lime")
@@ -38,6 +40,12 @@ set(CPACK_PACKAGE_CONTACT "Daniël Emmery")
 set(CPACK_PACKAGE_VENDOR "CNRS")
 set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pkg/rpm/lime.spec.in ${CMAKE_CURRENT_BINARY_DIR}/lime.spec @ONLY IMMEDIATE)
-set(CPACK_RPM_USER_BINARY_SPECFILE ${CMAKE_CURRENT_BINARY_DIR}/lime.spec)
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tool for fitting simulations data with Likhtman & McLeish' model.")
+
+# RPM
+set(CPACK_RPM_PACKAGE_LICENSE "GPLv3")
+set(CPACK_RPM_PACKAGE_REQUIRES "tbb >= 2018, gsl => 2.4, boost >= 1.66")
+#RPM:
+#BuildRequires:  gcc >= 9, cmake >= 3.0, tbb-devel >= 2018, gsl-devel >= 2.4, boost-devel >= 1.66
+
 include(CPack)
