@@ -15,6 +15,7 @@ add_definitions(-DBOOST_LOG_DYN_LINK)
 set(LIBS ${LIBS} stdc++)
 
 # Intel TBB
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../inc)
 find_package(TBB 2018)
 if(TBB_FOUND)
   add_definitions(-DRUN_PARALLEL)
