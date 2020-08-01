@@ -1,7 +1,9 @@
 #pragma once
 
-#ifdef BOOST_DIFFERENTIATION
-    #include <boost/math/differentiation/finite_difference.hpp>
+#include <boost/version.hpp>
+
+#if BOOST_VERSION >= 107000
+#include <boost/math/differentiation/finite_difference.hpp>
 #else
     #include <boost/math/tools/numerical_differentiation.hpp>
 #endif
@@ -56,7 +58,7 @@ template<typename Functor_t>
 Time_series derivative(const Functor_t& func, const Time_series::time_type& time_range)
 {
 
-#ifdef BOOST_DIFFERENTIATION
+#ifdef BOOST_VERSION >= 107000
     using namespace boost::math::differentiation;
 #else
     using namespace boost::math::tools;
