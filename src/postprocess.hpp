@@ -58,7 +58,7 @@ template<typename Functor_t>
 Time_series derivative(const Functor_t& func, const Time_series::time_type& time_range)
 {
 
-#ifdef BOOST_VERSION >= 107000
+#if BOOST_VERSION >= 107000
     using namespace boost::math::differentiation;
 #else
     using namespace boost::math::tools;
