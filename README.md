@@ -14,6 +14,14 @@ Currently only compiles on linux. Windows users should use the Docker version.
 
 ## Compiling from source
 
+### Requirements
+
+* g++
+* cmake
+* make
+
+### Compiling
+
 ```
 git clone https://github.com/Dmry/lime.git
 mkdir lime/build && cd "$_"
