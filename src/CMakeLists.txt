@@ -6,8 +6,12 @@ add_subdirectory(constraint_release)
 find_package(GSL 2.4 REQUIRED)
 set(LIBS GSL::gsl)
 
+# Python
+find_package(PythonLibs ${PY_VERSION} REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
+
 # Boost
-find_package(Boost 1.66.0 COMPONENTS log log_setup REQUIRED)
+find_package(Boost 1.66.0 COMPONENTS log log_setup python REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 set(LIBS ${LIBS} ${Boost_LIBRARIES} Boost::boost)
 add_definitions(-DBOOST_LOG_DYN_LINK)
