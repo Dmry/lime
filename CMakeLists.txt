@@ -38,14 +38,13 @@ set(CPACK_PACKAGE_NAME "Lime")
 set(CPACK_PACKAGE_RELEASE 1)
 set(CPACK_PACKAGE_CONTACT "Daniël Emmery")
 set(CPACK_PACKAGE_VENDOR "CNRS")
-set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tool for fitting simulations data with Likhtman & McLeish' model.")
 
 # RPM
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv3")
-set(CPACK_RPM_PACKAGE_REQUIRES "tbb >= 2018, gsl => 2.4, boost >= 1.66")
+set(CPACK_RPM_PACKAGE_REQUIRES "tbb >= 2018, gsl => 2.4, boost >= 1.66, pybind11, python")
 #RPM:
-#BuildRequires:  gcc >= 9, cmake >= 3.0, tbb-devel >= 2018, gsl-devel >= 2.4, boost-devel >= 1.66
+#BuildRequires:  gcc >= 9, cmake >= 3.0, tbb-devel >= 2018, gsl-devel >= 2.4, boost-devel >= 1.66, python-devel, pybind11-devel
 
 include(CPack)
