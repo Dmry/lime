@@ -168,6 +168,15 @@ class ICS_context_builder : public IContext_builder
         std::shared_ptr<System> system_;
 };
 
+class ICS_decoupled_context_builder : public ICS_context_builder
+{
+public:
+    ICS_decoupled_context_builder(std::shared_ptr<struct System> sys);
+    ICS_decoupled_context_builder(std::shared_ptr<struct System> sys, std::shared_ptr<Context>);
+
+    void gather_physics() override;
+};
+
 class Reproduction_context_builder : public IContext_builder
 {
     public:

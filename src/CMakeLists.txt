@@ -35,7 +35,7 @@ endif()
 
 # cpp
 file(GLOB_RECURSE src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp )
-list(REMOVE_ITEM src ${lime_SOURCE_DIR}/lime.cpp)
+list(REMOVE_ITEM src ${CMAKE_CURRENT_SOURCE_DIR}/lime.cpp)
 
 add_library(lime_static STATIC ${src})
 target_link_libraries(lime_static ${LIBS} "m")

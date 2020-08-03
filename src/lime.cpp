@@ -97,6 +97,7 @@ struct result_cmd
         f(CR_impl,           "--rub",                            args::help("Enable Rubinstein&Colby constraint release"),   args::set(constraint_release::impl::RUBINSTEINCOLBY));
     }
 
+    template <typename builder_t = ICS_context_builder>
     ICS_result build_result(Time_series::time_type time)
     {
         if (c_v <= 0.0)
@@ -104,7 +105,7 @@ struct result_cmd
             BOOST_LOG_TRIVIAL(warning) << "cv value set to zero.";
         }
 
-        std::unique_ptr<IContext_builder> builder = std::make_unique<ICS_context_builder>(system, ctx);
+        std::unique_ptr<IContext_builder> builder = std::make_unique<builder_t>(system, ctx);
 
         ICS_result driver(time, builder.get(), CR_impl);
 
@@ -240,12 +241,12 @@ struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
     }
 };
 
-
 struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, result_cmd
 {
     double wt_pow;
+    bool decouple;
 
-    fit() : wt_pow{1.2}
+    fit() : wt_pow{1.2}, decouple{false}
     {}
     
     static const char* help()
@@ -259,22 +260,35 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
         cmd_takes_file_input::parse(f);
         result_cmd::parse(f);
         cmd_writes_output_file::parse(f);
-        f(wt_pow,   "-w", "--weightpower",        args::help("Set power for the weighting factor 1/(x^wt)")                             );
+        f(wt_pow,   "-w", "--weightpower",         args::help("Set power for the weighting factor 1/(x^wt)") );
+        f(decouple, "--decouple",                  args::help("Decouple G_e and M_e"), args::set(true));
+        f(ctx->G_e, "-g", "--entanglementmodulus", args::help("Set initial guess for entanglement modulus, only used when decouple=true") );
+    }
+
+    void write_output(const ICS_result& result)
+    {
+        BOOST_LOG_TRIVIAL(info) << *view << "cv: " << result.CR->c_v_;
+        writer << *view << result;
     }
 
     void run()
     {
         auto input = get_file_contents();
 
-        auto result = build_result(input.get_time_range());
-
-        Fit<double, double> fit_driver(result.context_->N_e, result.context_->tau_monomer);
-
-        fit_driver.fit(input.get_values(), result, wt_pow);
-
-        BOOST_LOG_TRIVIAL(info) << *view << "cv: " << result.CR->c_v_;
-
-        writer << *view << result;
+        if (decouple)
+        {
+            auto result = build_result<ICS_decoupled_context_builder>(input.get_time_range());
+            Fit fit_driver(result.context_->N_e, result.context_->tau_monomer, result.context_->G_e);
+            fit_driver.fit(input.get_values(), result, wt_pow);
+            write_output(result);
+        }
+        else
+        {
+            auto result = build_result<ICS_context_builder>(input.get_time_range());
+            Fit fit_driver(result.context_->N_e, result.context_->tau_monomer);
+            fit_driver.fit(input.get_values(), result, wt_pow);
+            write_output(result);
+        }
     }
 };
 
