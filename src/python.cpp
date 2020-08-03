@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "context.hpp"
 #include "tube.hpp"
@@ -6,7 +7,7 @@
 #include "time_series.hpp"
 #include "constraint_release/constraint_release.hpp"
 
-PYBIND11_MODULE(lime, m)
+PYBIND11_MODULE(lime_python, m)
 {
     pybind11::class_<System>(m, "System")
         .def_readwrite("temperature", &System::T)
@@ -36,10 +37,10 @@ PYBIND11_MODULE(lime, m)
         .value("Heuzey", constraint_release::impl::HEUZEY)
         .value("Rubinsteincolby", constraint_release::impl::RUBINSTEINCOLBY);
 
-    m.def("generate_exponential", &Time_range::generate_exponential, pybind11::return_value_policy::copy);
-    m.def("time_range_from_vector", &Time_range::convert, pybind11::return_value_policy::copy);
+   // m.def("generate_exponential", &Time_range::generate_exponential, pybind11::return_value_policy::copy);
+   // m.def("time_range_from_vector", &Time_range::convert, pybind11::return_value_policy::copy);
 
-    pybind11::class_<ICS_result>(m, "ICS_result")
+/*     pybind11::class_<ICS_result>(m, "ICS_result")
         .def(pybind11::init<Time_series::time_type, ICS_context_builder*, constraint_release::impl>())
-        .def("calculate", &ICS_result::calculate);
+        .def("calculate", &ICS_result::calculate); */
 }
