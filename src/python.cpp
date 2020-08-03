@@ -6,15 +6,30 @@
 #include "result.hpp"
 #include "time_series.hpp"
 #include "constraint_release/constraint_release.hpp"
+#include "constraint_release/rubinsteincolby.hpp"
+#include "constraint_release/heuzey.hpp"
+
+using heu_factory = Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &>;
+
+Time_range::base generate_exponential_wrapper(Time_range::primitive base, Time_range::primitive max)
+{
+    return *Time_range::generate_exponential(base, max);
+}
 
 PYBIND11_MODULE(lime_python, m)
 {
-    pybind11::class_<System>(m, "System")
+    pybind11::class_<System, std::shared_ptr<System>>(m, "System")
+        .def(pybind11::init([]() {
+            return std::make_shared<System>();
+        }))
         .def_readwrite("temperature", &System::T)
         .def_readwrite("friction", &System::friction)
         .def_readwrite("density", &System::rho);
 
-    pybind11::class_<Context>(m, "Context")
+    pybind11::class_<Context, std::shared_ptr<Context>>(m, "Context")
+        .def(pybind11::init([]() {
+            return std::make_shared<Context>();
+        }))
         .def_readwrite("M", &Context::M)
         .def_readwrite("N", &Context::N)
         .def_readwrite("N_e", &Context::N_e)
@@ -31,16 +46,24 @@ PYBIND11_MODULE(lime_python, m)
         .def_readwrite("tau_monomer", &Context::tau_monomer);
 
     pybind11::class_<ICS_context_builder>(m, "Context_builder")
-        .def(pybind11::init<std::shared_ptr<struct System>, std::shared_ptr<Context>>());
+        .def(pybind11::init<std::shared_ptr<System>, std::shared_ptr<Context>>());
 
     pybind11::enum_<constraint_release::impl>(m, "cr_impl")
         .value("Heuzey", constraint_release::impl::HEUZEY)
         .value("Rubinsteincolby", constraint_release::impl::RUBINSTEINCOLBY);
 
-   // m.def("generate_exponential", &Time_range::generate_exponential, pybind11::return_value_policy::copy);
-   // m.def("time_range_from_vector", &Time_range::convert, pybind11::return_value_policy::copy);
+    m.def(
+        "init_factories",
+        []() { Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &> heu_factory(constraint_release::impl::HEUZEY);
+               Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &> rub_factory(constraint_release::impl::RUBINSTEINCOLBY);
+        },
+        pybind11::return_value_policy::automatic);
 
-/*     pybind11::class_<ICS_result>(m, "ICS_result")
-        .def(pybind11::init<Time_series::time_type, ICS_context_builder*, constraint_release::impl>())
-        .def("calculate", &ICS_result::calculate); */
+    m.def("generate_exponential", &generate_exponential_wrapper, pybind11::return_value_policy::copy);
+
+    pybind11::class_<ICS_result>(m, "ICS_result")
+        .def(pybind11::init([](const Time_range::base& time, ICS_context_builder *builder, constraint_release::impl impl) {
+            return ICS_result(std::make_shared<Time_range::base>(time), builder, impl);
+        }))
+        .def("calculate", &ICS_result::calculate);
 }

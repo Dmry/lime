@@ -4,6 +4,7 @@ import qdarkgraystyle
 import csv
 import os
 import subprocess
+import lime_python
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore
 
@@ -48,7 +49,7 @@ class Main(QDialog):
 
         self.setLayout(mainLayout)
         self.setGeometry(600, 600, 750, 800)
-        self.setWindowTitle("ICS")
+        self.setWindowTitle("Lime")
 
     def onChanged(self, text):
         if "Fit" in text:
@@ -79,22 +80,24 @@ class Main(QDialog):
         self.bottomLeftTabWidget.addTab(datatab, "&Data")
 
 class ArgumentRepresentation(QWidget):
-    def __init__(self, name, switch, value=0):
+    def __init__(self, name, refvar, value=0):
         QWidget.__init__(self)
 
         layout = QVBoxLayout(self)
         layout.setSpacing(5)
         layout.setContentsMargins(0, 2, 0, 0)
 
+        self.refvar = refvar
+
         self.box = QDoubleSpinBox()
-        self.box.setValue(value)
-        self.box.setDecimals(10)
-        self.box.setMaximum(100000000000000)
-        self.box.setValue(value)
+
         self.label = QLabel(name)
         self.label.setBuddy(self.box)
 
-        self.switch = switch
+        self.box.valueChanged.connect(self.onValueChanged)
+        self.box.setDecimals(10)
+        self.box.setMaximum(100000000000000)
+        self.box.setValue(value)
 
         layout.addWidget(self.label)
         layout.addWidget(self.box)
@@ -102,13 +105,13 @@ class ArgumentRepresentation(QWidget):
         self.setLayout(layout)
 
     def getValue(self):
-        return self.box.cleanText()
+        return self.refvar
 
     def getLabel(self):
         return self.label.text()
-    
-    def getSwitch(self):
-        return self.switch
+
+    def onValueChanged(self, val):
+        self.refvar = val
 
 class ParameterBox(QGroupBox):
 
@@ -122,35 +125,39 @@ class ParameterBox(QGroupBox):
 
         self.layout = QGridLayout()
 
-        self.addParameter("Final time", "-t", 20000000)
-        self.addParameter("Time spacing factor", "-b", 1.2)
-        self.addParameter("Length", "-N", 2048)
-        self.addParameter("Temperature", "-T", 1)
-        self.addParameter("Monomers per segment", "-n", 60)
-        self.addParameter("Monomer relaxation time", "-m", 1)
-        self.addParameter("Constraint release parameter", "-c", 1.0)
-        self.addParameter("Density", "-r", 0.68)
+        self.context = lime_python.Context()
+        self.system = lime_python.System()
+        self.time_factor = 1
+        self.time_max = 10000000
+        self.cr = 0.1
 
-      #  self.addParameter("Rouse time", "-R", 100)
-      #  self.addParameter("Mass", "-M", 1)
-      #  self.addParameter("Friction", "-f", 0.001)
-      #  self.addParameter("Density", "-r", 1)
-      #  self.addParameter("Mass per entanglement", "-m", 1.0)
-      #  self.addParameter("Persistence Length", "-a", 9)
-      #  self.addParameter("Kuhn Segment", "-b", 1)
-      #  self.addParameter("Temperature", "-T", 1)
+        self.context.N = 2048
+        self.system.temperature = 1
+        self.context.N_e = 60
+        self.context.tau_monomer = 1
+        self.system.density = 0.68
+
+        lime_python.init_factories()
+
+        self.addParameter("Final time", self.time_max, 20000000)
+        self.addParameter("Time spacing factor", self.time_factor, 1.2)
+        self.addParameter("Length", self.context.N, 2048)
+        self.addParameter("Temperature", self.system.temperature, 1)
+        self.addParameter("Monomers per segment", self.context.N_e, 60)
+        self.addParameter("Monomer relaxation time", self.context.tau_monomer, 1)
+        self.addParameter("Constraint release parameter", self.cr, 1.0)
+        self.addParameter("Density", self.system.density, 0.68)
 
         self.setLayout(self.layout)
 
-    def toCliArgs(self):
-        return ([self.layout.itemAt(i).widget().getSwitch(),
-                self.layout.itemAt(i).widget().getValue()] for i in range(self.layout.count()))
-
-    def addParameter(self, name, switch, defaultVal, ):
-        param = ArgumentRepresentation(name, switch, defaultVal)
+    def addParameter(self, name, refvar, defaultVal):
+        param = ArgumentRepresentation(name, defaultVal)
 
         self.layout.addWidget(param, self.current_row, self.current_col)
         self.updateRowColCount()
+
+    def getTime(self):
+        return lime_python.generate_exponential(self.time_factor, self.time_max)
 
     def updateRowColCount(self):
         self.current_col += 1
@@ -175,15 +182,13 @@ class GenerateBox(QWidget):
     
         self.setLayout(layout)
 
-    def generate(self):
-        self.results.removeVolatile()
-        command = ["../build/lime", "generate", "--rub", "-o", "../data/out_gui"]
-        for switch, value in self.parameters.toCliArgs():
-            command.append(switch)
-            command.append(value)
+        self.builder = lime_python.Context_builder(self.parameters.system, self.parameters.context)
+        self.impl = lime_python.cr_impl.Heuzey
 
-        subprocess.run(command)
-        self.results.loadFileData("../data/out_gui", volatile=True)
+    def generate(self):
+        self.time = self.parameters.getTime()
+        self.result = lime_python.ICS_result(self.time, self.builder, self.impl)
+        self.result.calculate()
 
 class DataSet(QTableWidgetItem):
     def __init__(self, label, path, volatile=False, parent=None):
