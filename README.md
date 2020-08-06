@@ -26,6 +26,13 @@ sudo yum install gcc git g++ cmake make boost-devel gsl-devel tbb-devel
 sudo pacman -S gcc git g++ cmake make boost gsl tbb
 ```
 
+#### Ubuntu
+```
+sudo apt install gcc g++ cmake git make libboost-dev libgsl-dev libtbb-dev
+# GUI
+sudo apt install python3-pybind11 python3-matplotlib python3-cairo python3-cairocffi python3-gi
+```
+
 ### Compiling
 ```
 git clone https://github.com/Dmry/lime.git
