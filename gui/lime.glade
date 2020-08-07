@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.2 -->
+<!-- Generated with glade 3.36.0 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkAboutDialog" id="about">
@@ -9,15 +9,14 @@
     <property name="program_name">Lime</property>
     <property name="version">1.0.0</property>
     <property name="copyright" translatable="yes">Copyright (C) 2020
-Daniel Emmery</property>
+Daniël Emmery</property>
     <property name="comments" translatable="yes">Tool for the application of Likhtman &amp; McLeish' reptation theory</property>
     <property name="website">https://ww.github.com/dmry/lime</property>
     <property name="website_label" translatable="yes">Contribute</property>
-    <property name="logo_icon_name"/>
+    <property name="authors">Daniël Emmery</property>
+    <property name="artists">Freepik on flaticon.com (icon)</property>
+    <property name="logo">lime.png</property>
     <property name="license_type">gpl-3-0</property>
-    <child type="titlebar">
-      <placeholder/>
-    </child>
     <child internal-child="vbox">
       <object class="GtkBox">
         <property name="can_focus">False</property>
@@ -57,6 +56,9 @@ Daniel Emmery</property>
         </child>
       </object>
     </child>
+    <child type="titlebar">
+      <placeholder/>
+    </child>
   </object>
   <object class="GtkEntryBuffer" id="cvStore">
     <property name="text" translatable="yes">0.90</property>
@@ -80,7 +82,11 @@ Daniel Emmery</property>
       <column type="gchararray"/>
       <!-- column-name path -->
       <column type="gchararray"/>
+      <!-- column-name data -->
+      <column type="GObject"/>
     </columns>
+    <signal name="row-changed" handler="on_resultStore_row_changed" swapped="no"/>
+    <signal name="row-inserted" handler="on_resultStore_row_changed" swapped="no"/>
   </object>
   <object class="GtkEntryBuffer" id="rhoStore">
     <property name="text" translatable="yes">0.68</property>
@@ -93,91 +99,9 @@ Daniel Emmery</property>
   </object>
   <object class="GtkWindow" id="lime">
     <property name="can_focus">False</property>
-    <property name="default_width">800</property>
+    <property name="default_width">1000</property>
     <property name="default_height">400</property>
-    <child type="titlebar">
-      <object class="GtkHeaderBar" id="header">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="title" translatable="yes">Lime</property>
-        <property name="has_subtitle">False</property>
-        <property name="show_close_button">True</property>
-        <child>
-          <object class="GtkButton" id="openButton">
-            <property name="label" translatable="yes">Open</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image_position">right</property>
-            <property name="always_show_image">True</property>
-            <signal name="clicked" handler="on_openButton_clicked" object="resultStore" swapped="no"/>
-          </object>
-        </child>
-        <child>
-          <object class="GtkButton">
-            <property name="label" translatable="yes">Compute</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="always_show_image">True</property>
-          </object>
-          <packing>
-            <property name="position">4</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="aboutButton">
-            <property name="label">gtk-about</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="use_stock">True</property>
-            <signal name="clicked" handler="on_aboutButton_clicked" object="about" swapped="no"/>
-          </object>
-          <packing>
-            <property name="pack_type">end</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="exportButon">
-            <property name="label">Export</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-          </object>
-          <packing>
-            <property name="pack_type">end</property>
-            <property name="position">2</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="hexpand">True</property>
-            <property name="spacing">6</property>
-            <child>
-              <object class="GtkStackSwitcher" id="viewSwitcher">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="halign">center</property>
-                <property name="stack">viewStack</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="pack_type">end</property>
-            <property name="position">4</property>
-          </packing>
-        </child>
-      </object>
-    </child>
+    <property name="icon">lime.png</property>
     <child>
       <object class="GtkGrid" id="body">
         <property name="visible">True</property>
@@ -189,7 +113,7 @@ Daniel Emmery</property>
             <property name="vexpand">True</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkNotebook">
+              <object class="GtkNotebook" id="tabs">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <child>
@@ -933,7 +857,7 @@ Daniel Emmery</property>
           </packing>
         </child>
         <child>
-          <object class="GtkPaned">
+          <object class="GtkPaned" id="dataPane">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="hexpand">True</property>
@@ -989,6 +913,9 @@ Daniel Emmery</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
+                <child>
+                  <placeholder/>
+                </child>
               </object>
               <packing>
                 <property name="resize">True</property>
@@ -1028,6 +955,90 @@ Daniel Emmery</property>
           <packing>
             <property name="left_attach">1</property>
             <property name="top_attach">0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <child type="titlebar">
+      <object class="GtkHeaderBar" id="header">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="title" translatable="yes">Lime</property>
+        <property name="has_subtitle">False</property>
+        <property name="show_close_button">True</property>
+        <child>
+          <object class="GtkButton" id="openButton">
+            <property name="label" translatable="yes">Open</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image_position">right</property>
+            <property name="always_show_image">True</property>
+            <signal name="clicked" handler="on_openButton_clicked" object="resultStore" swapped="no"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="aboutButton">
+            <property name="label">gtk-about</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_stock">True</property>
+            <signal name="clicked" handler="on_aboutButton_clicked" object="about" swapped="no"/>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="exportButon">
+            <property name="label">Export</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkStackSwitcher" id="viewSwitcher">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="halign">center</property>
+                <property name="stack">viewStack</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+            <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="computeButton">
+            <property name="label" translatable="yes">Compute</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="always_show_image">True</property>
+            <signal name="clicked" handler="on_computeButton_clicked" object="tabs" swapped="no"/>
+          </object>
+          <packing>
+            <property name="position">4</property>
           </packing>
         </child>
       </object>

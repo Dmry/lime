@@ -3,9 +3,15 @@
 #include <algorithm>
 #include <cmath>
 #include <ostream>
+#include <numeric>
+#include <stdexcept>
 
 Time_range::type Time_range::generate_exponential(primitive base, primitive max)
 {
+    if (std::abs(base - 1.0) < std::numeric_limits<double>::epsilon())
+    {
+        throw std::runtime_error("Using 1.0 as a base for a logarithmic scale will result in an empty time range.");
+    }
     Time_range::type time = Time_range::construct(static_cast<size_t>(log_with_base<primitive>(base, max)));
     std::generate(time->begin(), time->end(), [n=0, base] () mutable {return std::pow(base, n++);});
     return time;

@@ -11,9 +11,17 @@
 
 using heu_factory = Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &>;
 
+// A few wrappers to make things easier:
+
 Time_range::base generate_exponential_wrapper(Time_range::primitive base, Time_range::primitive max)
 {
     return *Time_range::generate_exponential(base, max);
+}
+
+// TODO: Support getting time series from result. Right now time is usually known by the user though (at least in the gui).
+std::vector<double> extract_time_from_result(const ICS_result& result)
+{
+    return *result.get_time_range();
 }
 
 PYBIND11_MODULE(lime_python, m)
@@ -65,5 +73,6 @@ PYBIND11_MODULE(lime_python, m)
         .def(pybind11::init([](const Time_range::base& time, ICS_context_builder *builder, constraint_release::impl impl) {
             return ICS_result(std::make_shared<Time_range::base>(time), builder, impl);
         }))
-        .def("calculate", &ICS_result::calculate);
+        .def("calculate", &ICS_result::calculate)
+        .def("get_values", &ICS_result::get_values);
 }
