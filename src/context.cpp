@@ -151,6 +151,32 @@ ICS_context_builder::context_view()
     return std::make_unique<Context_view<ICS_keys>>(*context_);
 }
 
+ICS_decoupled_context_builder::ICS_decoupled_context_builder(std::shared_ptr<struct System> system)
+    : ICS_context_builder{system}
+{
+}
+
+ICS_decoupled_context_builder::ICS_decoupled_context_builder(std::shared_ptr<struct System> system, std::shared_ptr<Context> context)
+    : ICS_context_builder{system, context}
+{
+}
+
+void ICS_decoupled_context_builder::gather_physics()
+{
+    // Tube-related physics
+    context_->add_physics_in_place<Z_from_length>();
+    context_->add_physics_in_place<M_e_from_N_e>();
+    context_->add_physics_in_place<G_f_normed>();
+
+    // System-related physics
+    context_->add_physics_in_place<Tau_e_alt>(system_);
+
+    // Tau_e dependent physics
+    context_->add_physics_in_place<Tau_r>();
+    context_->add_physics_in_place<Tau_d_0>();
+    context_->add_physics_in_place<Tau_df>();
+}
+
 Reproduction_context_builder::Reproduction_context_builder()
 :   IContext_builder{}
 {}
