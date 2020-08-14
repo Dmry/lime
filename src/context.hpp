@@ -163,6 +163,7 @@ class ICS_context_builder : public IContext_builder
         void initialize() override;
         void validate_state() override;
         std::unique_ptr<IContext_view> context_view() override;
+        std::shared_ptr<System> get_system();
 
     protected:
         std::shared_ptr<System> system_;
