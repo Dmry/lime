@@ -57,7 +57,7 @@ list(REMOVE_ITEM src ${CMAKE_CURRENT_SOURCE_DIR}/lime.cpp)
 if(pybind11_FOUND)
   pybind11_add_module(lime_python SHARED ${src})
   target_link_libraries(lime_python PRIVATE ${LIBS} "m")
-  install(TARGETS lime_python DESTINATION lib)
+  install(TARGETS lime_python DESTINATION /usr/lib/python3.8)
 endif()
 
 list(REMOVE_ITEM src ${CMAKE_CURRENT_SOURCE_DIR}/python.cpp)
