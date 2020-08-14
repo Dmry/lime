@@ -151,6 +151,12 @@ ICS_context_builder::context_view()
     return std::make_unique<Context_view<ICS_keys>>(*context_);
 }
 
+std::shared_ptr<System>
+ICS_context_builder::get_system()
+{
+    return system_;
+}
+
 ICS_decoupled_context_builder::ICS_decoupled_context_builder(std::shared_ptr<struct System> system)
     : ICS_context_builder{system}
 {

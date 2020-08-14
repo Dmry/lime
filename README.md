@@ -26,6 +26,12 @@ sudo yum install gcc git g++ cmake make boost-devel gsl-devel tbb-devel
 sudo pacman -S gcc git g++ cmake make boost gsl tbb
 ```
 
+#### Ubuntu
+```
+sudo apt install gcc g++ cmake git make libboost-dev libgsl-dev libtbb-dev
+# GUI
+sudo apt install python3-pybind11 python3-matplotlib python3-cairo python3-cairocffi python3-gi
+
 ### Compiling
 ```
 git clone https://github.com/Dmry/lime.git
@@ -33,6 +39,11 @@ mkdir lime/build && cd "$_"
 cmake ..
 make lime
 make install
+```
+
+Beware! Pybind11 seems to have issues with python3.8 on Ubuntu 20.04.1. If you want to use the UI, use the following instead of `cmake ..`
+```
+cmake .. -DPYTHON_INCLUDE_DIRS=$(python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())")  -DPYTHON_LIBRARY=$(python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))") -DPYTHON_EXECUTABLE:FILEPATH=`which python3`
 ```
 
 ### Packaging

@@ -31,13 +31,17 @@ struct Fit
 	gsl_multifit_nlinear_parameters fdf_params;
 	const gsl_multifit_nlinear_type *algorithm;
 	std::tuple<T&...> free_variables;
+	void (*callback_func)(const size_t, void*, const gsl_multifit_nlinear_workspace *w);
+	void* callback_params;
 
 	Fit(T&... free_variables_)
 	: workspace{nullptr},
 	  function{},
 	  fdf_params{gsl_multifit_nlinear_default_parameters()},
 	  algorithm{gsl_multifit_nlinear_trust},
-	  free_variables{free_variables_...}
+	  free_variables{free_variables_...},
+	  callback_func{&default_callback},
+	  callback_params{nullptr}
 	{
 		fdf_params.scale = gsl_multifit_nlinear_scale_more;
 		fdf_params.trs =   gsl_multifit_nlinear_trs_subspace2D;
@@ -48,7 +52,7 @@ struct Fit
 	}
 
  	static void
-	callback(const size_t iter, void *, const gsl_multifit_nlinear_workspace *w)
+	default_callback(const size_t iter, void *, const gsl_multifit_nlinear_workspace *w)
 	{
 		if (iter == 1 or iter % 5 == 0)
 		{
@@ -111,8 +115,8 @@ struct Fit
 			&free_variables,
 			&driver
 		};
-		
- 		std::apply([&x_init](auto&&... elems){
+
+		std::apply([&x_init](auto&&... elems){
 			size_t i{0};
 			((x_init[i] = std::forward<decltype(elems)>(elems), ++i), ...);
     	}, std::forward<std::tuple<T&...>>(free_variables));
@@ -157,7 +161,7 @@ struct Fit
 		f = gsl_multifit_nlinear_residual(workspace);
 		gsl_blas_ddot(f, f, &chisq0);
 
-		status = gsl_multifit_nlinear_driver(100, xtol, gtol, ftol, callback, NULL, &info, workspace);
+		status = gsl_multifit_nlinear_driver(100, xtol, gtol, ftol, callback_func, callback_params, &info, workspace);
 
 		/* compute final cost */
 	  	gsl_blas_ddot(f, f, &chisq);
@@ -169,11 +173,11 @@ struct Fit
 		}
 		else if (status == GSL_EMAXITER)
 		{
-			BOOST_LOG_TRIVIAL(error) << "Max iterations reached before converging.";
+			throw std::runtime_error("Max iterations reached before converging.");
 		}
 		else if (status == GSL_ENOPROG)
 		{
-			BOOST_LOG_TRIVIAL(error) << "Convergence too slow, exiting.";
+			throw std::runtime_error("Convergence too slow, exiting.");
 		}
 		return 0;
 	}
