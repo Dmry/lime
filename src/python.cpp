@@ -1,8 +1,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
+
+#include <functional>
 
 #include "context.hpp"
 #include "tube.hpp"
+#include "fit.hpp"
 #include "result.hpp"
 #include "time_series.hpp"
 #include "constraint_release/constraint_release.hpp"
@@ -23,6 +27,32 @@ std::vector<double> extract_time_from_result(const ICS_result& result)
 {
     return *result.get_time_range();
 }
+
+void fit(bool decouple, ICS_result &result, const std::vector<double> &input, double weighting, std::function<void()>& python_callback)
+{
+    auto cb =
+        [](const size_t iter, void *userdata, const gsl_multifit_nlinear_workspace *w) {
+            Fit<double, double, double>::default_callback(iter, nullptr, w);
+            auto python_callback = static_cast<std::function<void()>*>(userdata);
+            (*python_callback)();
+        };
+
+    if (decouple)
+    {
+        Fit fit_driver(result.context_->N_e, result.context_->tau_monomer, result.context_->G_e);
+        fit_driver.callback_func = cb;
+        fit_driver.callback_params = static_cast<void*>(&python_callback);
+        fit_driver.fit(input, result, weighting);
+    }
+    else
+    {
+        Fit fit_driver(result.context_->N_e, result.context_->tau_monomer);
+        fit_driver.callback_func = cb;
+        fit_driver.callback_params = static_cast<void *>(&python_callback);
+        fit_driver.fit(input, result, weighting);
+    }
+}       
+
 
 PYBIND11_MODULE(lime_python, m)
 {
@@ -54,7 +84,13 @@ PYBIND11_MODULE(lime_python, m)
         .def_readwrite("tau_monomer", &Context::tau_monomer);
 
     pybind11::class_<ICS_context_builder>(m, "Context_builder")
-        .def(pybind11::init<std::shared_ptr<System>, std::shared_ptr<Context>>());
+        .def(pybind11::init<std::shared_ptr<System>, std::shared_ptr<Context>>())
+        .def("get_context", &ICS_context_builder::get_context)
+        .def("get_system", &ICS_context_builder::get_system);
+
+    pybind11::class_<ICS_decoupled_context_builder, ICS_context_builder>(m, "Decoupled_context_builder")
+        .def(pybind11::init<std::shared_ptr<System>, std::shared_ptr<Context>>())
+        .def("get_context", &ICS_decoupled_context_builder::get_context);
 
     pybind11::enum_<constraint_release::impl>(m, "cr_impl")
         .value("Heuzey", constraint_release::impl::HEUZEY)
@@ -63,7 +99,7 @@ PYBIND11_MODULE(lime_python, m)
     m.def(
         "init_factories",
         []() { Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &> heu_factory(constraint_release::impl::HEUZEY);
-               Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &> rub_factory(constraint_release::impl::RUBINSTEINCOLBY);
+               Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context &> rub_factory(constraint_release::impl::RUBINSTEINCOLBY);
         },
         pybind11::return_value_policy::automatic);
 
@@ -74,5 +110,20 @@ PYBIND11_MODULE(lime_python, m)
             return ICS_result(std::make_shared<Time_range::base>(time), builder, impl);
         }))
         .def("calculate", &ICS_result::calculate)
-        .def("get_values", &ICS_result::get_values);
+        .def("get_values", &ICS_result::get_values)
+        .def("set_cv", [](const ICS_result& res, double cv) {res.CR->c_v_ = cv;});
+
+    m.def("fit", &fit);
+    
+    /*
+    Currently, this seems to cause lifetime issues. we'll use a wrapper for now.
+
+    pybind11::class_<Fit<double, double, double>>(m, "Fit_decoupled")
+        .def(pybind11::init<double&, double&, double&>())
+        .def("fit", &Fit<double, double, double>::fit);
+
+    pybind11::class_<Fit<double, double>>(m, "Fit")
+        .def(pybind11::init<double&, double&>())
+        .def("fit", &Fit<double, double>::fit);
+    */
 }
