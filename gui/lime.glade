@@ -2,80 +2,32 @@
 <!-- Generated with glade 3.36.0 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
-  <object class="GtkAboutDialog" id="about">
-    <property name="can_focus">False</property>
-    <property name="title" translatable="yes">About</property>
-    <property name="type_hint">dialog</property>
-    <property name="program_name">Lime</property>
-    <property name="version">1.0.0</property>
-    <property name="copyright" translatable="yes">Copyright (C) 2020
-Daniël Emmery</property>
-    <property name="comments" translatable="yes">Tool for the application of Likhtman &amp; McLeish' reptation theory</property>
-    <property name="website">https://ww.github.com/dmry/lime</property>
-    <property name="website_label" translatable="yes">Contribute</property>
-    <property name="authors">Daniël Emmery</property>
-    <property name="artists">Freepik on flaticon.com (icon)</property>
-    <property name="logo">lime.png</property>
-    <property name="license_type">gpl-3-0</property>
-    <child internal-child="vbox">
-      <object class="GtkBox">
-        <property name="can_focus">False</property>
-        <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
-        <child internal-child="action_area">
-          <object class="GtkButtonBox">
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <object class="GtkButton" id="thanksButton">
-                <property name="label" translatable="yes">Thanks!</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="margin_top">12</property>
-                <signal name="clicked" handler="on_thanksButton_clicked" object="about" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-      </object>
-    </child>
-    <child type="titlebar">
-      <placeholder/>
-    </child>
-  </object>
   <object class="GtkEntryBuffer" id="cvStore">
     <property name="text" translatable="yes">0.90</property>
+  </object>
+  <object class="GtkEntryBuffer" id="fit_weightStore">
+    <property name="text" translatable="yes">1.2</property>
   </object>
   <object class="GtkEntryBuffer" id="geStore">
     <property name="text" translatable="yes">0.1</property>
   </object>
+  <object class="GtkEntryBuffer" id="gen_exponentStore">
+    <property name="text" translatable="yes">1.2</property>
+  </object>
+  <object class="GtkEntryBuffer" id="gen_maxStore">
+    <property name="text" translatable="yes">1e9</property>
+  </object>
+  <object class="GtkEntryBuffer" id="implStore"/>
   <object class="GtkEntryBuffer" id="nStore">
     <property name="text" translatable="yes">1024</property>
   </object>
   <object class="GtkEntryBuffer" id="neStore">
-    <property name="text" translatable="yes">0.1</property>
+    <property name="text" translatable="yes">60</property>
   </object>
   <object class="GtkTreeStore" id="resultStore">
     <columns>
       <!-- column-name show -->
-      <column type="GObject"/>
+      <column type="gboolean"/>
       <!-- column-name name -->
       <column type="gchararray"/>
       <!-- column-name timestamp -->
@@ -83,6 +35,8 @@ Daniël Emmery</property>
       <!-- column-name path -->
       <column type="gchararray"/>
       <!-- column-name data -->
+      <column type="GObject"/>
+      <!-- column-name context -->
       <column type="GObject"/>
     </columns>
     <signal name="row-changed" handler="on_resultStore_row_changed" swapped="no"/>
@@ -136,24 +90,6 @@ Daniël Emmery</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkComboBoxText" id="crSelectorGenerate">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="valign">center</property>
-                        <property name="active">0</property>
-                        <items>
-                          <item translatable="yes">Heuzey</item>
-                          <item translatable="yes">Rubinstein</item>
-                          <item translatable="yes">CLF</item>
-                        </items>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
                         <property name="top_attach">0</property>
                       </packing>
                     </child>
@@ -293,6 +229,8 @@ Daniël Emmery</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="valign">center</property>
+                        <property name="active">True</property>
+                        <signal name="state-set" handler="on_decouplegeSwitch_activate" object="geEntryGenerate" swapped="no"/>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -322,6 +260,8 @@ Daniël Emmery</property>
                         <property name="valign">center</property>
                         <property name="buffer">geStore</property>
                         <property name="input_purpose">digits</property>
+                        <signal name="hide" handler="on_geEntry_hide" object="geLabelGenerate" swapped="no"/>
+                        <signal name="show" handler="on_geEntry_show" object="geLabelGenerate" swapped="no"/>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -436,7 +376,7 @@ Daniël Emmery</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="valign">center</property>
-                        <property name="text" translatable="yes">1.2</property>
+                        <property name="buffer">gen_exponentStore</property>
                         <property name="input_purpose">digits</property>
                       </object>
                       <packing>
@@ -450,12 +390,30 @@ Daniël Emmery</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="valign">center</property>
-                        <property name="text" translatable="yes">200000000</property>
+                        <property name="buffer">gen_maxStore</property>
                         <property name="input_purpose">digits</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
                         <property name="top_attach">11</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkComboBoxText" id="crSelectorGenerate">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="valign">center</property>
+                        <property name="active">0</property>
+                        <items>
+                          <item translatable="yes">Heuzey</item>
+                          <item translatable="yes">Rubinstein</item>
+                          <item translatable="yes">CLF</item>
+                        </items>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
                       </packing>
                     </child>
                   </object>
@@ -711,6 +669,8 @@ Daniël Emmery</property>
                         <property name="valign">center</property>
                         <property name="buffer">geStore</property>
                         <property name="input_purpose">digits</property>
+                        <signal name="hide" handler="on_geEntry_hide" object="geLabelFit" swapped="no"/>
+                        <signal name="show" handler="on_geEntry_show" object="geLabelFit" swapped="no"/>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -780,10 +740,10 @@ Daniël Emmery</property>
                       <object class="GtkEntry" id="weightEntryFit">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="tooltip_markup" translatable="yes">Data will be weighted by y&lt;sup&gt;weighting&lt;/sup&gt;.  Values &gt; 1.0 favor early-time behavior, values &lt; 1.0 favor late-time behavior. Choose 0 to disable weighting.</property>
+                        <property name="tooltip_markup" translatable="yes">Data will be weighted by y&lt;sup&gt;weighting&lt;/sup&gt;.  Values greater than 1.0 favor early-time behavior, values smaller than 1.0 favor late-time behavior. Choose 0 to disable weighting.</property>
                         <property name="halign">start</property>
                         <property name="valign">center</property>
-                        <property name="text" translatable="yes">1.2</property>
+                        <property name="buffer">fit_weightStore</property>
                         <property name="input_purpose">digits</property>
                       </object>
                       <packing>
@@ -797,6 +757,8 @@ Daniël Emmery</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="valign">center</property>
+                        <property name="active">True</property>
+                        <signal name="state-set" handler="on_decouplegeSwitch_activate" object="geEntryFit" swapped="no"/>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -816,30 +778,6 @@ Daniël Emmery</property>
                   </object>
                   <packing>
                     <property name="position">1</property>
-                    <property name="tab_fill">False</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="orientation">vertical</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-                <child type="tab">
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Compare</property>
-                  </object>
-                  <packing>
-                    <property name="position">2</property>
                     <property name="tab_fill">False</property>
                   </packing>
                 </child>
@@ -867,21 +805,25 @@ Daniël Emmery</property>
               <object class="GtkBox" id="viewArea">
                 <property name="height_request">200</property>
                 <property name="visible">True</property>
+                <property name="app_paintable">True</property>
                 <property name="can_focus">False</property>
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
-                <property name="orientation">vertical</property>
+                <property name="resize_mode">immediate</property>
                 <child>
                   <object class="GtkStack" id="viewStack">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
                     <property name="transition_duration">40</property>
                     <property name="transition_type">crossfade</property>
                     <child>
                       <object class="GtkBox" id="graphicView">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
+                        <child>
+                          <placeholder/>
+                        </child>
                         <child>
                           <placeholder/>
                         </child>
@@ -895,9 +837,207 @@ Daniël Emmery</property>
                       <object class="GtkBox" id="numericView">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
+                        <property name="halign">center</property>
+                        <property name="valign">center</property>
+                        <property name="margin_left">18</property>
                         <child>
-                          <placeholder/>
+                          <object class="GtkGrid" id="contextGrid">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="valign">start</property>
+                            <property name="margin_left">6</property>
+                            <property name="margin_right">6</property>
+                            <property name="margin_top">6</property>
+                            <property name="margin_bottom">6</property>
+                            <property name="row_spacing">7</property>
+                            <property name="column_spacing">18</property>
+                            <child>
+                              <object class="GtkLabel" id="rhoLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="tooltip_text" translatable="yes">Density</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">ρ</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="tLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">T</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="nameLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">Name</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="taueLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes">τ&lt;sub&gt;e&lt;/sub&gt;</property>
+                                <property name="use_markup">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">9</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="taurLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes">τ&lt;sub&gt;r&lt;/sub&gt;</property>
+                                <property name="use_markup">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">10</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="taudzeroLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes">τ&lt;sub&gt;d (0)&lt;/sub&gt;</property>
+                                <property name="use_markup">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">11</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="taudfLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes">τ&lt;sub&gt;df&lt;/sub&gt;</property>
+                                <property name="use_markup">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">12</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="taumonomerLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="tooltip_text" translatable="yes">Monomer relaxation time</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">τ&lt;sub&gt;monomer&lt;/sub&gt;</property>
+                                <property name="use_markup">True</property>
+                                <property name="justify">right</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">8</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="zLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes">Z</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">7</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="neLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="tooltip_text" translatable="yes">Number of monomers per entanglement</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">N&lt;sub&gt;e&lt;/sub&gt;</property>
+                                <property name="use_markup">True</property>
+                                <property name="justify">right</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">6</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="nLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="tooltip_text" translatable="yes">Chain length</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">N</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">5</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="cvLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="tooltip_text" translatable="yes">Constraint release parameter</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">c&lt;sub&gt;ν&lt;/sub&gt;</property>
+                                <property name="use_markup">True</property>
+                                <property name="justify">right</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="geLabelContext">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="tooltip_text" translatable="yes">Elastic modulus</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">G&lt;sub&gt;e&lt;/sub&gt;</property>
+                                <property name="use_markup">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">4</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
                         </child>
                       </object>
                       <packing>
@@ -939,9 +1079,7 @@ Daniël Emmery</property>
                     <property name="show_expanders">False</property>
                     <property name="enable_tree_lines">True</property>
                     <child internal-child="selection">
-                      <object class="GtkTreeSelection">
-                        <property name="mode">browse</property>
-                      </object>
+                      <object class="GtkTreeSelection" id="storeViewSelection"/>
                     </child>
                   </object>
                 </child>
@@ -1035,13 +1173,84 @@ Daniël Emmery</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="always_show_image">True</property>
-            <signal name="clicked" handler="on_computeButton_clicked" object="tabs" swapped="no"/>
+            <signal name="pressed" handler="on_computeButton_pressed" swapped="no"/>
+            <signal name="released" handler="on_computeButton_released" object="tabs" swapped="no"/>
           </object>
           <packing>
             <property name="position">4</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkSpinner" id="spinner">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="position">5</property>
+          </packing>
+        </child>
       </object>
+    </child>
+  </object>
+  <object class="GtkAboutDialog" id="about">
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">About</property>
+    <property name="window_position">center</property>
+    <property name="type_hint">normal</property>
+    <property name="gravity">center</property>
+    <property name="attached_to">lime</property>
+    <property name="program_name">Lime</property>
+    <property name="version">1.0.0</property>
+    <property name="copyright" translatable="yes">Copyright (C) 2020
+Daniël Emmery</property>
+    <property name="comments" translatable="yes">Tool for the application of Likhtman &amp; McLeish' reptation theory</property>
+    <property name="website">https://ww.github.com/dmry/lime</property>
+    <property name="website_label" translatable="yes">Contribute</property>
+    <property name="authors">Daniël Emmery</property>
+    <property name="artists">Freepik on flaticon.com (icon)</property>
+    <property name="logo">lime.png</property>
+    <property name="license_type">gpl-3-0</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <object class="GtkButton" id="thanksButton">
+                <property name="label" translatable="yes">Thanks!</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="margin_top">12</property>
+                <signal name="clicked" handler="on_thanksButton_clicked" object="about" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+    </child>
+    <child type="titlebar">
+      <placeholder/>
     </child>
   </object>
 </interface>

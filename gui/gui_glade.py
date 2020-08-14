@@ -2,11 +2,11 @@ import gi
 
 gi.require_version('Gtk', '3.0')
 
-from gi.repository import Gtk, Gio, GObject
+from gi.repository import Gtk, Gdk, GLib, Gio, GObject
 
 import numpy as np
-import matplotlib
 
+import matplotlib
 from matplotlib.backends.backend_gtk3agg import (
     FigureCanvasGTK3Agg as FigureCanvas)
 from matplotlib.backends.backend_gtk3 import (
@@ -14,44 +14,95 @@ from matplotlib.backends.backend_gtk3 import (
 from matplotlib.figure import Figure
 
 import datetime
+import concurrent.futures
+import time
+from decimal import Decimal
 
 import lime_python
 
 class PlotArea(Gtk.ScrolledWindow):
+    '''
+    Displays matplotlib plots when the graphic view is selected.
+    '''
+
     def __init__(self):
-        settings=Gtk.Settings.get_default()
+        # Get the font color of the theme to later adjust the axes accordingly
+        self.text_color = Gtk.Label().get_style_context().get_color(Gtk.StateType.NORMAL).to_string()
 
-        colors=settings.get_property("gtk-color-scheme")
-        colors=colors.split("\n")
+        # Convert string to tuple
+        self.text_color = tuple(map(int, self.text_color.strip('rgba()').split(','))) 
 
-        self.text_color = 'white'
+        # Normalize between 0 and 1 for matplotlib
+        self.text_color = tuple(x / 255 for x in self.text_color)
 
-        for color in colors:
-            if 'text' in color:
-                self.text_color=color.split(':')[1].strip()
-                break
-
+        # Init prarent and set up container
         Gtk.ScrolledWindow.__init__(self, border_width=10)
 
         self.set_hexpand(True)
         self.set_vexpand(True)
 
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
         self.f = Figure(figsize=(600, 400), dpi=100)
+
+        # Set figure to be transparent
         self.f.patch.set_visible(False)
-        self.a = self.f.add_subplot(111, xscale="log", yscale="log")
+
+        self.a = self.f.add_subplot(111, xscale="log", yscale="log", xlabel="t", ylabel="G(t)")
+
+        self.a.xaxis.label.set_color(self.text_color)
+        self.a.yaxis.label.set_color(self.text_color)
+
+        # Set the background to be transparent
         self.a.set_facecolor('None')
+
+        # Set the colors of the axes to the font colors of the theme
         self.a.tick_params(labelcolor=self.text_color, color=self.text_color)
-        for child in self.a.get_children():
+
+        for child in self.a.axes.get_children():
             if isinstance(child, matplotlib.spines.Spine):
                 child.set_color(self.text_color)
+
+        # Finalize canvas
         self.canvas = FigureCanvas(self.f)
-        self.canvas.toolbar = NavigationToolbar(self.canvas, self)
-        self.add(self.canvas)
+
+        # Set up toolbar
+        toolbar = NavigationToolbar(self.canvas, self)
+        toolbar.set_orientation(Gtk.Orientation.HORIZONTAL)
+        
+        box.pack_start(toolbar, False, False, 1)
+        box.pack_start(self.canvas, True, True, 0)
+
+        self.add(box)
 
     def plot(self, store, iterator):
-        self.a.loglog(store[iterator][4].time, store[iterator][4].data)
+        '''
+        Plot all selected rows in the treeview.
+        '''
+        timeseries = timeseries_from_store_row(store, iterator)
+        name = name_from_store_row(store, iterator)
+        self.a.loglog(timeseries.time, timeseries.data, label=name)
+        self.set_legend()
         self.f.canvas.draw()
 
+        self.a.xaxis.label.set_visible(True)
+
+        self.a.xaxis.label.set_color(self.text_color)
+        self.a.yaxis.label.set_color(self.text_color)
+
+    def set_legend(self):
+        handles, labels = self.a.get_legend_handles_labels()
+        legend = self.a.legend(handles, labels, facecolor='None')
+
+        for text in legend.get_texts():
+            text.set_color(self.text_color)
+
+    def clear(self):
+        '''
+        Clear the canvas, used to refresh the plot.
+        '''
+        self.a.clear()
+        self.f.canvas.draw()
 
 class TimeSeries(GObject.Object):
     def __init__(self, time, data):
@@ -59,24 +110,36 @@ class TimeSeries(GObject.Object):
         self.time = time
         self.data = data
 
+class ContextWrapper(GObject.Object):
+    def __init__(self, context, system, cv):
+        GObject.Object.__init__(self)
+        self.context = context
+        self.system = system
+        self.cv = cv
+
 class Result(GObject.Object):
-    def __init__(self, time, data, name, datetime=datetime.datetime.now(), path=""):
+    '''
+    Container class for all (meta)data of a result that has been computed or loaded from file.
+    '''
+    def __init__(self, time, data, name, datetime=datetime.datetime.now(), path="", context_wrapper=None):
         GObject.Object.__init__(self)
         self.time_series = TimeSeries(time, data)
         self.name = name
         self.datetime = datetime
         self.path = path
-        self.checkbox = Gtk.CheckButton(active=True)
+        self.context_wrapper = context_wrapper
 
     def add_to_store(self, store, iterator):
-        self.iter = store.append(iterator, [self.checkbox, self.name, self.datetime, self.path, self.time_series])
+        self.iter = store.append(iterator, [True, self.name, self.datetime, self.path, self.time_series, self.context_wrapper])
         return self.iter
 
     def get_iter(self):
         return self.iter
 
-
 class FileDialog(Gtk.FileChooserDialog):
+    '''
+    Dialog to open space delimited files, commented by '#'
+    '''
     def __init__(self):
         Gtk.FileChooserDialog.__init__(self, title="Please choose a file", action=Gtk.FileChooserAction.OPEN)
 
@@ -117,22 +180,246 @@ class FileDialog(Gtk.FileChooserDialog):
 
         return tuple(Result(time, col, name, datetime, path) for col in iterdatacols)
 
-def generate_variable_store_dict(builder):
-    return {
-        "n" : builder.get_object("nStore"),
-        "t" : builder.get_object("tStore"),
-        "ne" : builder.get_object("neStore"),
-        "taumonomer" : builder.get_object("taumonStore") ,
-        "cv" : builder.get_object("cvStore"),
-        "rho" : builder.get_object("rhoStore")
-    }
+class VarStore:
+    '''
+    Maps entry buffers to a dictionary for easy retrieval
+    '''
+    def __init__(self, builder):
+        self.dict = {
+            "ge" : builder.get_object("geStore"),
+            "n" : builder.get_object("nStore"),
+            "t" : builder.get_object("tStore"),
+            "ne" : builder.get_object("neStore"),
+            "taumonomer" : builder.get_object("taumonStore") ,
+            "cv" : builder.get_object("cvStore"),
+            "rho" : builder.get_object("rhoStore"),
+            "gen_impl" : builder.get_object("crSelectorGenerate"),
+            "fit_impl" : builder.get_object("crSelectorFit"),
+            "gen_exponent" : builder.get_object("gen_exponentStore"),
+            "gen_max" : builder.get_object("gen_maxStore"),
+            "fit_weighting" : builder.get_object("fit_weightStore"),
+        }
+
+        self.impl_dict = {
+            "Rubinstein" : lime_python.cr_impl.Rubinsteincolby,
+            "Heuzey" : lime_python.cr_impl.Heuzey,
+            "CLF" : lime_python.cr_impl.Heuzey
+        }
+
+    def to_number(self, var):
+        '''
+        Converts values from entry buffers to floatin gpoint
+        '''
+        try:
+            return float(self.dict[var].get_text())
+        except Exception as ex:
+            dialog = Gtk.MessageDialog(
+                transient_for=self.window,
+                flags=0,
+                message_type=Gtk.MessageType.INFO,
+                buttons=Gtk.ButtonsType.OK,
+                text="Please enter a valid number",
+            )
+            dialog.format_secondary_text(
+                f"For variable {var}"
+            )
+            response = dialog.run()
+            dialog.destroy()
+            raise ex
+
+    def get_impl(self, tag):
+        return self.impl_dict[self.dict[f'{tag}_impl'].get_active_text()]
+
+class Builder:
+    '''
+    Controls builder functions from the lime library.
+    '''
+    def __init__(self, window, decouple, var_store):
+        self.window = window
+        self.var_store = var_store
+        self.decouple = decouple
+
+    def get(self):
+        context = lime_python.Context()
+        system = lime_python.System()
+        
+        try:
+            context.N = self.var_store.to_number("n")
+            system.temperature = self.var_store.to_number("t")
+            context.N_e = self.var_store.to_number("ne")
+            context.tau_monomer = self.var_store.to_number("taumonomer")
+            system.density = self.var_store.to_number("rho")
+            context.G_e = self.var_store.to_number("ge")
+        except:
+            return
+        
+        if self.decouple:
+            return lime_python.Decoupled_context_builder(system, context)
+        else:
+            return lime_python.Context_builder(system, context)
+
+class Generator:
+    '''
+    Controls generator functions from the lime library.
+    '''
+    def __init__(self, window, decouple, var_store):
+        lime_python.init_factories()
+
+        time_factor = var_store.to_number("gen_exponent")
+        time_max = var_store.to_number("gen_max")
+        self.time = lime_python.generate_exponential(time_factor, time_max)
+
+        self.impl = var_store.get_impl("gen")
+
+        self.builder = Builder(window, decouple, var_store).get()
+        self.cv = var_store.to_number("cv")
+
+    def generate(self):
+        self.result = lime_python.ICS_result(self.time, self.builder, self.impl)
+        self.result.set_cv(self.cv)
+
+        self.result.calculate()
+
+        context_wrapper = ContextWrapper(self.builder.get_context(), self.builder.get_system(), self.cv)
+
+        return Result(self.time, self.result.get_values(), "generated_result", datetime.datetime.now().strftime("%H:%M:%S  %d/%m/%Y"), "", context_wrapper)
+
+class Fit:
+    '''
+    Controls fit functions from the lime library.
+    '''
+
+    def __init__(self, window, decouple, var_store, input_timeseries, callback):
+        lime_python.init_factories()
+
+        self.weighting = var_store.to_number("fit_weighting")
+        self.decouple = decouple
+        self.input_timeseries = input_timeseries
+        self.impl = var_store.get_impl("fit")
+        self.builder = Builder(window, decouple, var_store).get()
+        self.cv = var_store.to_number("cv")
+        self.callback = callback
+
+    def fit(self, dialog = None):
+        self.result = lime_python.ICS_result(self.input_timeseries.time, self.builder, self.impl)
+        self.result.set_cv(self.cv)
+
+        try:
+            lime_python.fit(self.decouple, self.result, self.input_timeseries.data, self.weighting, self.callback)
+        except Exception as ex:
+            raise ex
+        finally:
+            if dialog:
+                dialog.destroy()
+
+        context_wrapper = ContextWrapper(self.builder.get_context(), self.builder.get_system(), self.cv)
+
+        return Result(self.input_timeseries.time, self.result.get_values(), "fit_result", datetime.datetime.now().strftime("%H:%M:%S  %d/%m/%Y"), "", context_wrapper)
+
+class ContextViewColumn:
+    def __init__(self, grid, column_index):
+        self.grid = grid
+        self.column_index = column_index
+
+        self.name = self.create_label(0)
+        self.T = self.create_label(1)
+        self.rho = self.create_label(2)
+        self.cv = self.create_label(3)
+        self.G_e = self.create_label(4)
+        self.N = self.create_label(5)
+        self.N_e = self.create_label(6)
+        self.Z = self.create_label(7)
+        self.tau_monomer = self.create_label(8)
+        self.tau_e = self.create_label(9)
+        self.tau_r = self.create_label(10)
+        self.tau_d_0 = self.create_label(11)
+        self.tau_df = self.create_label(12)
+
+    def __del__(self):
+        self.grid.remove_column(self.column_index)
+
+    def set_context(self, context_wrapper):
+        context = context_wrapper.context
+        self.display(context.N, self.N)
+        self.display(context.G_e, self.G_e)
+        self.display(context.tau_monomer, self.tau_monomer)
+        self.display(context.N_e, self.N_e)
+        self.display(context.Z, self.Z)
+        self.display(context.tau_e, self.tau_e)
+        self.display(context.tau_r, self.tau_r)
+        self.display(context.tau_d_0, self.tau_d_0)
+        self.display(context.tau_df, self.tau_df)
+
+        system = context_wrapper.system
+        self.display(system.temperature, self.T)
+        self.display(system.density, self.rho)
+
+        cv = context_wrapper.cv
+        self.display(cv, self.cv)
+
+    def convert(self, input):
+        out = str(round(input, 2))
+
+        if input >= 10000:
+            return '%.2E' % Decimal(out)
+        else:
+            return str(round(input, 2))
+
+    def display(self, input, out):
+        out.set_text(self.convert(input))
+
+    def set_name(self, name):
+        self.name.set_text(name)
+
+    def create_label(self, row_index):
+        label = Gtk.Label()
+        self.grid.attach(label, self.column_index, row_index, 1, 1)
+        return label
+
+class ContextGrid:
+    def __init__(self, initial_grid, store):
+        self.grid = initial_grid
+        self.store = store
+        self.columns = []
+
+    def update(self):
+        self.clear()
+        loop_tree_active(self.store, self.update_column)
+        self.grid.show_all()
+
+    def clear(self):
+        del self.columns
+        self.columns = []
+
+    def update_column(self, store, tree_iter):
+        context_wrapper = context_from_store_row(store, tree_iter)
+
+        if context_wrapper:
+            name = name_from_store_row(store, tree_iter)
+
+            column = ContextViewColumn(self.grid, self.new_column_index())
+            column.set_context(context_wrapper)
+            column.set_name(name)
+
+            self.columns.append(column)
+
+    def new_column_index(self):
+        return len(self.columns)+1
 
 class Handler:
-    def __init__(self, store, plot_area, var_store_dict):
-        self.store = store # Maybe unused
+    '''
+    Handles signals emitted by widgets that have been comfigured in glade
+    '''
+    def __init__(self, window, spinner, decoupler, store, plot_area, treeview, var_store, context_grid):
+        self.window = window
+        self.spinner = spinner
+        self.decoupler = decoupler
+        self.store = store
         self.current = store.get_iter_first()
         self.plot_area = plot_area
-        self.var_store_dict = var_store_dict
+        self.treeview = treeview
+        self.var_store = var_store
+        self.context_grid = context_grid
 
     def onDestroy(self, *args):
         Gtk.main_quit()
@@ -155,70 +442,244 @@ class Handler:
         dialog.destroy()
 
     def on_resultStore_row_changed(self, store, row_id, tree_iter):
-        self.plot_area.plot(store, tree_iter)
+        redraw_plot(store, self.plot_area)
+        self.context_grid.update()
 
-    def var_store_to_number(self, var):
-        return float(self.var_store_dict[var].get_text())
+    def spin(self):
+        GLib.timeout_add(10, self.spinner.start)
+        time.sleep(1)
 
-    def on_computeButton_clicked(self, tabs):
-        self.context = lime_python.Context()
-        self.system = lime_python.System()
-        self.time_factor = 1.2
-        self.time_max = 10000000
-        self.cv = 0.1
+    def on_computeButton_pressed(self, button):
+        self.spinner.start()
 
-        self.context.N = self.var_store_to_number("n")
-        self.system.temperature = self.var_store_to_number("t")
-        self.context.N_e = self.var_store_to_number("ne")
-        self.context.tau_monomer = self.var_store_to_number("taumonomer")
-        self.system.density = self.var_store_to_number("rho")
+    def on_computeButton_released(self, tabs):
+        '''
+        Main control flow for any calculation.
+        Works asynchronously and selects operation based on selected tab.
+        '''
 
-        lime_python.init_factories()
+        i = tabs.get_current_page()
+        decouple = self.decoupler.get_state()
 
-        self.time = lime_python.generate_exponential(self.time_factor, self.time_max)
-        self.builder = lime_python.Context_builder(self.system, self.context)
-        self.impl = lime_python.cr_impl.Heuzey
+        # Generate
+        if i == 0:
+            generator = Generator(self.window, decouple, self.var_store)
 
-        self.result = lime_python.ICS_result(self.time, self.builder, self.impl)
-        self.result.calculate()
-        result = Result(self.time, self.result.get_values(), "generated_result", datetime.datetime.now().strftime("%H:%M:%S  %d/%m/%Y"), "")
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                dialog = None
+                self.future = executor.submit(generator.generate)
+        # Fit
+        elif i == 1:
+            # Find selected row in treestore, or show error dialog
+            try:
+                store, iterator = get_selected(self.treeview)
+            except:
+                error_dialog = Gtk.MessageDialog(
+                    transient_for=self.window,
+                    flags=0,
+                    message_type=Gtk.MessageType.INFO,
+                    buttons=Gtk.ButtonsType.OK,
+                    text="Please (open and) select a dataset to fit"
+                )
+                error_dialog.run()
+                error_dialog.destroy()
+                GLib.idle_add(self.spinner.stop)
+                return
+            
+            # Initialize fit object with data points
+            timeseries = timeseries_from_store_row(store, iterator)
+            fit = Fit(self.window, decouple, self.var_store, timeseries, lambda: None)
 
-        # Triggers row changed event (and thus plot)
-        position = result.add_to_store(self.store, self.current)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                # Dialog to show while computing
+                dialog = Gtk.MessageDialog(
+                    transient_for=self.window,
+                    flags=0,
+                    message_type=Gtk.MessageType.INFO,
+                    text="Computing ...",)
+
+                # Call fit function asynchronously
+                self.future = executor.submit(fit.fit, dialog)
+
+                while not self.future.running():
+                    print('waiting for computation to start..')
+                    time.sleep(1)
+
+                # Display "Computing ..." dialog while running
+                if self.future.running():
+                    response = dialog.run()
+
+        # Wait for future to return the result.
+        # Display discriptive error dialog if the library throws an exception
+        # E.g. when convergence fails
+        try:
+            return_value = self.future.result()    
+            return_value.add_to_store(self.store, self.current)
+        except Exception as ex:
+            error_dialog = Gtk.MessageDialog(
+                    transient_for=self.window,
+                    flags=0,
+                    message_type=Gtk.MessageType.INFO,
+                    buttons=Gtk.ButtonsType.OK,
+                    text=f"{ex}"
+                )
+            error_dialog.run()
+            error_dialog.destroy()
+        finally:
+            GLib.idle_add(self.spinner.stop)
+
+    def on_decouplegeSwitch_activate(self, entry, state):
+        '''
+        Shows or hides the entry boxes and labels (via signal) for g_e
+        '''
+        if state == True:
+            entry.show()
+        else:
+            entry.hide()
+
+    def on_geEntry_hide(self, label):
+        label.hide()
+
+    def on_geEntry_show(self, label):
+        label.show()
+
+##################################
+# Programmatically added signals #
+##################################
+
+def cell_edited(renderer, path, new_text, treeview):
+    if len(new_text) > 0:
+        model = treeview.get_model()
+        iter = model.get_iter_from_string(path)
+        if iter:
+            model.set(iter, 1, new_text)
+
+# When the 'show' toggle is clicked, redraw plot accordingly
+def on_cell_toggled(widget, path, treeview, plot_area, context_grid):
+    # Get the row that was toggled
+    model = treeview.get_model()
+    tree_iter = model.get_iter_from_string(path)
+    # Get the current setting
+    val = active_from_store_row(model, tree_iter)
+    # Toggle the setting to the other value
+    model.set(tree_iter, 0, not val)
+
+    # Redraw plot
+    redraw_plot(model, plot_area)
+
+    # Refresh context grid
+    context_grid.update()
+
+# Clear plot area and redraw according to the result store
+def redraw_plot(store, plot_area):
+    plot_area.clear()
+    loop_tree_active(store, lambda store, treeiter : plot_area.plot(store, treeiter))
+
+# Loop over all active rows in the store and execute func(store, rowiter)
+def loop_tree_active(store, func):
+    treeiter = store.get_iter_first()
+
+    while treeiter is not None:
+        if active_from_store_row(store, treeiter):
+            func(store, treeiter)
+            if store.iter_has_child(treeiter):
+                childiter = store.iter_children(treeiter)
+                func(store, childiter)
+        treeiter = store.iter_next(treeiter)
+
+# Assumes setting correctly set to select a single row
+def get_selected(treeview):
+    selection = treeview.get_selection()
+    (model, path) = selection.get_selected_rows()
+    try:
+        return (model, model.get_iter(path))
+    except Exception as ex:
+        raise ex
+
+def active_from_store_row(store, iterator):
+    return store[iterator][0]
+
+def name_from_store_row(store, iterator):
+    return store[iterator][1]
+
+def timeseries_from_store_row(store, iterator):
+    return store[iterator][4]
+
+def context_from_store_row(store, iterator):
+    return store[iterator][5]
+
+# Allow key press events, such as deleting a result from the store
+def key_press_event(widget, event, treeview, plot_area, context_grid):
+    keyval = event.keyval
+    keyval_name = Gdk.keyval_name(keyval)
+    state = event.state
+
+    if keyval_name == 'Delete':
+        model, tree_iter = get_selected(treeview)
+        model.remove(tree_iter)
+        plot_area.clear()
+        redraw_plot(model, plot_area)
+        context_grid.update()
 
 
+##################################
+#             Main               #
+##################################
 
-builder = Gtk.Builder()
-builder.add_from_file("lime.glade")
+def main():
+    # Load glade file
+    builder = Gtk.Builder()
+    builder.add_from_file("lime.glade")
 
-store = builder.get_object("resultStore")
+    # Collect dependencies for the signal handler
+    window = builder.get_object("lime")
+    spinner = builder.get_object('spinner')
+    decoupler = builder.get_object("decouplegeSwitchGenerate")
+    store = builder.get_object("resultStore")
+    plot_area = PlotArea()
+    treeview = builder.get_object('storeView')
+    varstore = VarStore(builder)
+    context_grid = ContextGrid(builder.get_object('contextGrid'), store)
 
-graphic_view = builder.get_object("graphicView")
-plot_area = PlotArea()
-graphic_view.add(plot_area)
+    # Construct and connect signal handler
+    handler = Handler(window, spinner, decoupler, store, plot_area, treeview, varstore, context_grid)
+    builder.connect_signals(handler)
 
-builder.connect_signals(Handler(store, plot_area, generate_variable_store_dict(builder)))
+    # Set up the area that will display plots
+    graphic_view = builder.get_object("graphicView")
+    graphic_view.add(plot_area)
 
-treeview = builder.get_object('storeView')
+    # Allow key press events, such as deleting a result from the store
+    window.connect("key-press-event", key_press_event, treeview, plot_area, context_grid)
 
-cell = Gtk.CellRendererToggle()
-col = Gtk.TreeViewColumn("Show", cell)
-treeview.append_column(col)
-
-columns = ["Name",
-           "Timestamp",
-           "Path"]
-
-for i, column in enumerate(columns):
-    # cellrenderer to render the text
-    cell = Gtk.CellRendererText()
-    # the column is created
-    col = Gtk.TreeViewColumn(column, cell, text=i+1)
-
-    # and it is appended to the treeview
+    # Populate treeview..
+    # .. With a toggle to hide or show graphs
+    cell = Gtk.CellRendererToggle()
+    cell.set_property('activatable', True)
+    cell.set_active(True)
+    cell.connect("toggled", on_cell_toggled, treeview, plot_area, context_grid)
+    col = Gtk.TreeViewColumn("Active", cell, active=0)
     treeview.append_column(col)
+    # .. With an editable name to identify data
+    cell = Gtk.CellRendererText()
+    cell.set_property("editable", True)
+    cell.connect("edited", cell_edited, treeview)
+    col = Gtk.TreeViewColumn("Name", cell, text=1)
+    treeview.append_column(col)
+    # .. With immutable columns to hold metadata
+    columns = ["Timestamp",
+               "Path"]
 
-window = builder.get_object("lime")
-window.show_all()
+    for i, column in enumerate(columns):
+        cell = Gtk.CellRendererText()
+        col = Gtk.TreeViewColumn(column, cell, text=i+2)
+        treeview.append_column(col)
 
-Gtk.main()
+    # Make the program exit when the window is closed
+    window.connect("destroy", Gtk.main_quit)
+    window.show_all()
+
+    Gtk.main()
+
+if __name__=="__main__":
+    main()
