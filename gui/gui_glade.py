@@ -18,6 +18,9 @@ from matplotlib.figure import Figure
 import datetime
 import concurrent.futures
 import time
+import csv
+import os
+
 from decimal import Decimal
 
 import lime_python
@@ -27,23 +30,24 @@ class PlotArea(Gtk.ScrolledWindow):
     Displays matplotlib plots when the graphic view is selected.
     '''
 
-    def __init__(self):
-        # Get the font color of the theme to later adjust the axes accordingly
-        self.text_color = Gtk.Label().get_style_context().get_color(Gtk.StateType.NORMAL).to_string()
-
-        # Convert string to tuple
-        self.text_color = tuple(map(int, self.text_color.strip('rgba()').split(','))) 
-
-        # Normalize between 0 and 1 for matplotlib
-        self.text_color = tuple(x / 255 for x in self.text_color)
-
+    def __init__(self, text_color):
         # Init prarent and set up container
         Gtk.ScrolledWindow.__init__(self, border_width=10)
+        
+        self.text_color = text_color
 
         self.set_hexpand(True)
         self.set_vexpand(True)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        but = Gtk.Box()
+
+        # Convert string to tuple
+        self.text_color = tuple(map(float, self.text_color.strip('rgba()').split(','))) 
+
+        # Normalize between 0 and 1 for matplotlib
+        self.text_color = tuple(x / 255 for x in self.text_color)
 
         self.f = Figure(figsize=(600, 400), dpi=100)
 
@@ -59,7 +63,7 @@ class PlotArea(Gtk.ScrolledWindow):
         self.a.set_facecolor('None')
 
         # Set the colors of the axes to the font colors of the theme
-        self.a.tick_params(labelcolor=self.text_color, color=self.text_color)
+        self.a.tick_params(labelcolor=self.text_color, color=self.text_color, which='both')
 
         for child in self.a.axes.get_children():
             if isinstance(child, matplotlib.spines.Spine):
@@ -85,12 +89,14 @@ class PlotArea(Gtk.ScrolledWindow):
         name = name_from_store_row(store, iterator)
         self.a.loglog(timeseries.time, timeseries.data, label=name)
         self.set_legend()
-        self.f.canvas.draw()
 
-        self.a.xaxis.label.set_visible(True)
+        self.a.set_xlabel('t')
+        self.a.set_ylabel('G(t)')
 
         self.a.xaxis.label.set_color(self.text_color)
         self.a.yaxis.label.set_color(self.text_color)
+
+        self.f.canvas.draw()
 
     def set_legend(self):
         handles, labels = self.a.get_legend_handles_labels()
@@ -113,11 +119,12 @@ class TimeSeries(GObject.Object):
         self.data = data
 
 class ContextWrapper(GObject.Object):
-    def __init__(self, context, system, cv):
+    def __init__(self, context, system, cv, view):
         GObject.Object.__init__(self)
         self.context = context
         self.system = system
         self.cv = cv
+        self.context_view = view
 
 class Result(GObject.Object):
     '''
@@ -138,7 +145,7 @@ class Result(GObject.Object):
     def get_iter(self):
         return self.iter
 
-class FileDialog(Gtk.FileChooserDialog):
+class OpenFileDialog(Gtk.FileChooserDialog):
     '''
     Dialog to open space delimited files, commented by '#'
     '''
@@ -165,7 +172,8 @@ class FileDialog(Gtk.FileChooserDialog):
         filter_any.add_pattern("*")
         self.add_filter(filter_any)
 
-    def read_dat(self, file):
+    def read_dat(self):
+        file = self.get_file()
         data = np.loadtxt(fname=file.get_path(), comments="#")
         name = file.get_basename()
         datetime = file.query_info(Gio.FILE_ATTRIBUTE_TIME_MODIFIED, 0, None).get_modification_date_time().format("%H:%M:%S  %d/%m/%Y")
@@ -181,6 +189,80 @@ class FileDialog(Gtk.FileChooserDialog):
         next(iterdatacols)
 
         return tuple(Result(time, col, name, datetime, path) for col in iterdatacols)
+
+class SaveFileDialog(Gtk.FileChooserDialog):
+    def __init__(self):
+        Gtk.FileChooserDialog.__init__(self, title="Please choose a file", action=Gtk.FileChooserAction.SAVE)
+
+        self.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_SAVE,
+            Gtk.ResponseType.OK,
+        )
+
+    def run(self, view):
+        try:
+            self.selected = get_selected(view)
+            return Gtk.FileChooserDialog.run(self)
+        except:
+            return Gtk.ResponseType.CANCEL
+
+    def write_dat(self):
+        '''
+        Write context and result from selected row to space delimited .dat
+        '''
+        path = self.get_file().get_path()
+        root, ext = os.path.splitext(path)
+        if not ext:
+           ext = '.dat'
+        path = root + ext
+
+        if os.path.exists(path) == True:
+            confirm = ConfirmOverwrite(self, path)
+            response = confirm.run()
+            confirm.destroy()
+            if response == Gtk.ResponseType.CANCEL:
+                return False
+        
+        self.write_selected(path)
+        return True
+
+    def write_selected(self, path):
+        '''
+        Internal utility function to do the actual write. Use write_dat instead, which e.g. asks for overwrite confirmation
+        '''
+        store, tree_iter = self.selected
+
+        context_wrapper = context_wrapper_from_store_row(store, tree_iter)
+        name = name_from_store_row(store, tree_iter)
+
+        with open(path, "wt") as fp:
+            fp.write(lime_python.context_view_to_comment(context_wrapper.context_view))
+
+            writer = csv.writer(fp, delimiter=' ')
+
+            timeseries = timeseries_from_store_row(store, tree_iter)
+
+            for row in zip(timeseries.time, timeseries.data):
+                writer.writerow(row)
+
+class ConfirmOverwrite(Gtk.MessageDialog):
+    def __init__(self, parent, path): 
+        Gtk.MessageDialog.__init__(self,
+                transient_for=parent,
+                flags=0,
+                message_type=Gtk.MessageType.QUESTION,
+                text="The file " + path + " exists.\nOverwrite?",
+            )
+
+        self.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_SAVE,
+            Gtk.ResponseType.OK,)
+
+        self.show_all()
 
 class VarStore:
     '''
@@ -205,7 +287,7 @@ class VarStore:
         self.impl_dict = {
             "Rubinstein" : lime_python.cr_impl.Rubinsteincolby,
             "Heuzey" : lime_python.cr_impl.Heuzey,
-            "CLF" : lime_python.cr_impl.Heuzey
+            "CLF" : lime_python.cr_impl.CLF
         }
 
     def to_number(self, var):
@@ -282,7 +364,7 @@ class Generator:
 
         self.result.calculate()
 
-        context_wrapper = ContextWrapper(self.builder.get_context(), self.builder.get_system(), self.cv)
+        context_wrapper = ContextWrapper(self.builder.get_context(), self.builder.get_system(), self.cv, self.builder.get_context_view())
 
         return Result(self.time, self.result.get_values(), "generated_result", datetime.datetime.now().strftime("%H:%M:%S  %d/%m/%Y"), "", context_wrapper)
 
@@ -314,7 +396,7 @@ class Fit:
             if dialog:
                 dialog.destroy()
 
-        context_wrapper = ContextWrapper(self.builder.get_context(), self.builder.get_system(), self.cv)
+        context_wrapper = ContextWrapper(self.builder.get_context(), self.builder.get_system(), self.cv, self.builder.get_context_view())
 
         return Result(self.input_timeseries.time, self.result.get_values(), "fit_result", datetime.datetime.now().strftime("%H:%M:%S  %d/%m/%Y"), "", context_wrapper)
 
@@ -394,7 +476,7 @@ class ContextGrid:
         self.columns = []
 
     def update_column(self, store, tree_iter):
-        context_wrapper = context_from_store_row(store, tree_iter)
+        context_wrapper = context_wrapper_from_store_row(store, tree_iter)
 
         if context_wrapper:
             name = name_from_store_row(store, tree_iter)
@@ -433,15 +515,25 @@ class Handler:
         about.hide()
 
     def on_openButton_clicked(self, store):
-        dialog = FileDialog()
+        dialog = OpenFileDialog()
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
-            result = dialog.read_dat(dialog.get_file())
+            result = dialog.read_dat()
             for entry in result:
                 entry.add_to_store(store, self.current)
 
         dialog.destroy()
+
+    def on_exportButon_clicked(self, view):
+        dialog = SaveFileDialog()
+        response = dialog.run(view)
+
+        try:
+            if response == Gtk.ResponseType.OK:
+                dialog.write_dat()
+        finally:
+            dialog.destroy()
 
     def on_resultStore_row_changed(self, store, row_id, tree_iter):
         redraw_plot(store, self.plot_area)
@@ -476,15 +568,6 @@ class Handler:
             try:
                 store, iterator = get_selected(self.treeview)
             except:
-                error_dialog = Gtk.MessageDialog(
-                    transient_for=self.window,
-                    flags=0,
-                    message_type=Gtk.MessageType.INFO,
-                    buttons=Gtk.ButtonsType.OK,
-                    text="Please (open and) select a dataset to fit"
-                )
-                error_dialog.run()
-                error_dialog.destroy()
                 GLib.idle_add(self.spinner.stop)
                 return
             
@@ -591,11 +674,20 @@ def loop_tree_active(store, func):
 
 # Assumes setting correctly set to select a single row
 def get_selected(treeview):
-    selection = treeview.get_selection()
-    (model, path) = selection.get_selected_rows()
     try:
+        selection = treeview.get_selection()
+        (model, path) = selection.get_selected_rows()
         return (model, model.get_iter(path))
     except Exception as ex:
+        error_dialog = Gtk.MessageDialog(
+            #transient_for=self.window,
+            flags=0,
+            message_type=Gtk.MessageType.INFO,
+            buttons=Gtk.ButtonsType.OK,
+            text="Please select a dataset"
+        )
+        error_dialog.run()
+        error_dialog.destroy()
         raise ex
 
 def active_from_store_row(store, iterator):
@@ -607,7 +699,7 @@ def name_from_store_row(store, iterator):
 def timeseries_from_store_row(store, iterator):
     return store[iterator][4]
 
-def context_from_store_row(store, iterator):
+def context_wrapper_from_store_row(store, iterator):
     return store[iterator][5]
 
 # Allow key press events, such as deleting a result from the store
@@ -638,7 +730,7 @@ def main():
     spinner = builder.get_object('spinner')
     decoupler = builder.get_object("decouplegeSwitchGenerate")
     store = builder.get_object("resultStore")
-    plot_area = PlotArea()
+    plot_area = PlotArea(builder.get_object("nLabelGenerate").get_style_context().get_color(Gtk.StateFlags.NORMAL).to_string())
     treeview = builder.get_object('storeView')
     varstore = VarStore(builder)
     context_grid = ContextGrid(builder.get_object('contextGrid'), store)
@@ -660,7 +752,7 @@ def main():
     cell.set_property('activatable', True)
     cell.set_active(True)
     cell.connect("toggled", on_cell_toggled, treeview, plot_area, context_grid)
-    col = Gtk.TreeViewColumn("Active", cell, active=0)
+    col = Gtk.TreeViewColumn("Show", cell, active=0)
     treeview.append_column(col)
     # .. With an editable name to identify data
     cell = Gtk.CellRendererText()

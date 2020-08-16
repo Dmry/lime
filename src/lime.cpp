@@ -8,6 +8,7 @@
 #include "contour_length_fluctuations.hpp"
 #include "constraint_release/heuzey.hpp"
 #include "constraint_release/rubinsteincolby.hpp"
+#include "constraint_release/clf.hpp"
 #include "lime_log_utils.hpp"
 #include "result.hpp"
 #include "parallel_policy.hpp"
@@ -27,6 +28,7 @@
 
 static Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context&> rubinstein_constraint_release_factory(constraint_release::impl::RUBINSTEINCOLBY);
 static Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context&> heuzey_constraint_release_factory(constraint_release::impl::HEUZEY);
+static Register_class<IConstraint_release, CLF_constraint_release, constraint_release::impl, double, Context&> clf_constraint_release_factory(constraint_release::impl::CLF);
 
 struct lime : args::group<lime>
 {
