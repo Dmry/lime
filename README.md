@@ -19,14 +19,6 @@ Currently only compiles on linux. Windows users should use the Docker version.
 * [Heuzey et al. 2004](https://doi.org/10.1002/app.20881)
 * [Rubinstein and Colby 1988](https://doi.org/10.1063/1.455620)
 
-## Requirements
-
-* Boost &ge; 1.66
-* C++17 with parallel algorithms (GCC &ge; 9)
-* GNU Scientific Library &ge; 2.4
-* Intel-tbb &ge; 2018
-* GUI: Python 3: NumPy, Matplotlib, GObject
-
 ## Installing from .rpm (Fedora)
 Download the release from this page and run
 ```
@@ -36,6 +28,12 @@ sudo yum install Lime-1.0.0-1.x86_64.rpm
 ## Compiling from source
 
 ### Requirements
+
+* Boost &ge; 1.66
+* C++17 with parallel algorithms (GCC &ge; 9)
+* GNU Scientific Library &ge; 2.4
+* Intel-tbb &ge; 2018
+* GUI: Python 3: NumPy, Matplotlib, GObject
 
 #### Fedora
 ```
