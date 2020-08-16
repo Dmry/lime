@@ -2,8 +2,8 @@
 Type=Application
 Version=1.0.0
 Name=Lime
-Tool for fitting simulations data with Likhtman & McLeish' model.
-Path=/usr/local/bin/
+Comment=Tool for fitting simulations data with Likhtman & McLeish' model.
 Exec=/usr/local/bin/lime-gui
+Icon=/usr/local/share/lime/lime.png
 Terminal=false
 Categories=Utility
