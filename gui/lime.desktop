@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0.0
+Name=Lime
+Tool for fitting simulations data with Likhtman & McLeish' model.
+Path=/usr/local/bin/
+Exec=/usr/local/bin/lime-gui
+Terminal=false
+Categories=Utility
