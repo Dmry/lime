@@ -19,6 +19,8 @@ Currently only compiles on linux. Windows users should use the Docker version.
 #### Fedora
 ```
 sudo yum install gcc git g++ cmake make boost-devel gsl-devel tbb-devel
+# GUI
+sudo yum install pybind11-devel python3-devel python3-matplotlib python3-matplotlib-gtk3 python3-gobject python3-numpy
 ```
 
 #### Arch linux
