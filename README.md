@@ -7,12 +7,25 @@ Currently only compiles on linux. Windows users should use the Docker version.
 
 ![Optional Text](../master/gui/screen_graphic.png)
 
+## Package contents
+
+* Command-line interface (lime)
+* Python library (lime_python - see python.cpp for API details)
+* GTK3 interface (lime-gui)
+
+## References
+
+* [Likhtman and McLeish 2002](https://doi.org/10.1021/ma0200219)
+* [Heuzey et al. 2004](https://doi.org/10.1002/app.20881)
+* [Rubinstein and Colby 1988](https://doi.org/10.1063/1.455620)
+
 ## Requirements
 
 * Boost &ge; 1.66
 * C++17 with parallel algorithms (GCC &ge; 9)
 * GNU Scientific Library &ge; 2.4
 * Intel-tbb &ge; 2018
+* GUI: Python 3: NumPy, Matplotlib, GObject
 
 ## Compiling from source
 
@@ -28,6 +41,8 @@ sudo yum install pybind11-devel python3-devel python3-matplotlib python3-matplot
 #### Arch linux
 ```
 sudo pacman -S gcc git g++ cmake make boost gsl tbb
+# GUI
+sudo pacman -S pybind11 python-matplotlib python-numpy python-gobject
 ```
 
 #### Ubuntu
