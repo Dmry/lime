@@ -27,6 +27,12 @@ Currently only compiles on linux. Windows users should use the Docker version.
 * Intel-tbb &ge; 2018
 * GUI: Python 3: NumPy, Matplotlib, GObject
 
+## Installing from .rpm (Fedora)
+Download the release from this page and run
+```
+sudo yum install Lime-1.0.0-1.x86_64.rpm
+```
+
 ## Compiling from source
 
 ### Requirements
