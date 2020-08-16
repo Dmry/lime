@@ -43,7 +43,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tool for fitting simulations data with Li
 
 # RPM
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv3")
-set(CPACK_RPM_PACKAGE_REQUIRES "tbb >= 2018, gsl => 2.4, boost >= 1.66, pybind11, python")
+set(CPACK_RPM_PACKAGE_REQUIRES "tbb >= 2018, gsl => 2.4, boost >= 1.66, pybind11-devel, python, python-matplotlib, python3-gobject, python-numpy")
 #RPM:
 #BuildRequires:  gcc >= 9, cmake >= 3.0, tbb-devel >= 2018, gsl-devel >= 2.4, boost-devel >= 1.66, python-devel, pybind11-devel
 
