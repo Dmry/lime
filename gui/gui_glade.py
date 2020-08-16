@@ -723,7 +723,8 @@ def key_press_event(widget, event, treeview, plot_area, context_grid):
 def main():
     # Load glade file
     builder = Gtk.Builder()
-    builder.add_from_file("lime.glade")
+    current_directory = os.path.split(os.path.abspath(__file__))
+    builder.add_from_file(f"{current_directory}/../share/lime.glade")
 
     # Collect dependencies for the signal handler
     window = builder.get_object("lime")
