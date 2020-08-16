@@ -724,7 +724,7 @@ def main():
     # Load glade file
     builder = Gtk.Builder()
     dir, bin = os.path.split(os.path.abspath(__file__))
-    builder.add_from_file(f"{dir}/../share/lime.glade")
+    builder.add_from_file(f"{dir}/../share/lime/lime.glade")
 
     # Collect dependencies for the signal handler
     window = builder.get_object("lime")
