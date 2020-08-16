@@ -839,14 +839,13 @@
                         <property name="can_focus">False</property>
                         <property name="halign">center</property>
                         <property name="valign">center</property>
-                        <property name="margin_left">18</property>
+                        <property name="margin_start">18</property>
+                        <property name="margin_end">18</property>
                         <child>
                           <object class="GtkGrid" id="contextGrid">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="valign">start</property>
-                            <property name="margin_left">6</property>
-                            <property name="margin_right">6</property>
                             <property name="margin_top">6</property>
                             <property name="margin_bottom">6</property>
                             <property name="row_spacing">7</property>
@@ -1135,6 +1134,8 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
+            <property name="tooltip_text" translatable="yes">Export data from selected row to space delimited file</property>
+            <signal name="clicked" handler="on_exportButon_clicked" object="storeView" swapped="no"/>
           </object>
           <packing>
             <property name="pack_type">end</property>
@@ -1173,8 +1174,8 @@
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="always_show_image">True</property>
-            <signal name="pressed" handler="on_computeButton_pressed" swapped="no"/>
-            <signal name="released" handler="on_computeButton_released" object="tabs" swapped="no"/>
+            <signal name="clicked" handler="on_computeButton_pressed" swapped="no"/>
+            <signal name="clicked" handler="on_computeButton_released" object="tabs" swapped="no"/>
           </object>
           <packing>
             <property name="position">4</property>

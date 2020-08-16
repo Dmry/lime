@@ -30,6 +30,7 @@ namespace constraint_release
     {
         HEUZEY,
         RUBINSTEINCOLBY,
+        CLF
     };
 
     typedef Factory_template<IConstraint_release, impl, double, Context&> Factory_with_context;

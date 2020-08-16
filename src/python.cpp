@@ -12,8 +12,7 @@
 #include "constraint_release/constraint_release.hpp"
 #include "constraint_release/rubinsteincolby.hpp"
 #include "constraint_release/heuzey.hpp"
-
-using heu_factory = Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &>;
+#include "constraint_release/clf.hpp"
 
 // A few wrappers to make things easier:
 
@@ -53,6 +52,12 @@ void fit(bool decouple, ICS_result &result, const std::vector<double> &input, do
     }
 }       
 
+std::string context_view_to_comment(IContext_view& view)
+{
+    std::ostringstream stream;
+    view.serialize(stream, "# ");
+    return stream.str();
+}
 
 PYBIND11_MODULE(lime_python, m)
 {
@@ -83,16 +88,21 @@ PYBIND11_MODULE(lime_python, m)
         .def_readwrite("tau_df", &Context::tau_df)
         .def_readwrite("tau_monomer", &Context::tau_monomer);
 
+    pybind11::class_<IContext_view>(m, "Context_view");
+
     pybind11::class_<ICS_context_builder>(m, "Context_builder")
         .def(pybind11::init<std::shared_ptr<System>, std::shared_ptr<Context>>())
         .def("get_context", &ICS_context_builder::get_context)
-        .def("get_system", &ICS_context_builder::get_system);
+        .def("get_system", &ICS_context_builder::get_system)
+        .def("get_context_view", &ICS_context_builder::context_view);
 
     pybind11::class_<ICS_decoupled_context_builder, ICS_context_builder>(m, "Decoupled_context_builder")
         .def(pybind11::init<std::shared_ptr<System>, std::shared_ptr<Context>>())
-        .def("get_context", &ICS_decoupled_context_builder::get_context);
+        .def("get_context", &ICS_decoupled_context_builder::get_context)
+        .def("get_context_view", &ICS_decoupled_context_builder::context_view);
 
     pybind11::enum_<constraint_release::impl>(m, "cr_impl")
+        .value("CLF", constraint_release::impl::CLF)
         .value("Heuzey", constraint_release::impl::HEUZEY)
         .value("Rubinsteincolby", constraint_release::impl::RUBINSTEINCOLBY);
 
@@ -100,6 +110,7 @@ PYBIND11_MODULE(lime_python, m)
         "init_factories",
         []() { Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &> heu_factory(constraint_release::impl::HEUZEY);
                Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context &> rub_factory(constraint_release::impl::RUBINSTEINCOLBY);
+               Register_class<IConstraint_release, CLF_constraint_release, constraint_release::impl, double, Context&> clf_factory(constraint_release::impl::CLF);
         },
         pybind11::return_value_policy::automatic);
 
@@ -114,7 +125,9 @@ PYBIND11_MODULE(lime_python, m)
         .def("set_cv", [](const ICS_result& res, double cv) {res.CR->c_v_ = cv;});
 
     m.def("fit", &fit);
-    
+
+    m.def("context_view_to_comment", &context_view_to_comment);
+
     /*
     Currently, this seems to cause lifetime issues. we'll use a wrapper for now.
 

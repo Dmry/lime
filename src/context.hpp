@@ -77,14 +77,14 @@ BOOST_HANA_ADAPT_STRUCT(Context,
 
 class IContext_view
 {
-private:
-    virtual std::ostream& serialize(std::ostream&, const char* prefix = "\0") const = 0;
-
 public:
     explicit IContext_view(const Context& ctx);
     virtual ~IContext_view() = default;
     virtual void accept(std::function<void(double&)> f) const = 0;
 
+    virtual std::ostream &serialize(std::ostream &, const char *prefix = "\0") const = 0;
+
+    // TODO: (low priority) check if these can be removed now that serialize is public.
     friend std::ostream& operator << (std::ostream& stream, const IContext_view& view);
     friend struct Writer& operator << (struct Writer& stream, const IContext_view& view);
 
@@ -115,7 +115,6 @@ class Context_view : public IContext_view
             hana::for_each(vals, f);
         }
 
-    private:
         std::ostream&
         serialize(std::ostream& stream, const char* prefix = "\0") const override
         {
