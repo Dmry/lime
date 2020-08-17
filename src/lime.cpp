@@ -2,6 +2,8 @@
 #include <boost/tuple/tuple.hpp>
 #define BOOST_LOG_DYN_LINK 1
 
+#include "config.h"
+
 #include "../inc/args.hpp"
 
 #include "file_reader.hpp"
@@ -44,7 +46,7 @@ struct lime : args::group<lime>
             boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
         };
 
-        f(nullptr,  "-v", "--version", args::help("Print version"),    args::show("0.0.1")         );
+        f(nullptr, "-v", "--version", args::help("Print version"), args::show(PROJECT_VER));
         f(nullptr,  "-D", "--debug",   args::help("Enable debugging"), args::lazy_callback(debug)  );
     }
 

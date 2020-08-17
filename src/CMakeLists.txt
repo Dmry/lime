@@ -85,6 +85,9 @@ if(CMAKE_THREAD_LIBS_INIT)
   target_link_libraries(lime "${CMAKE_THREAD_LIBS_INIT}")
 endif()
 
+configure_file("config.h.in" "config.h")
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 install(TARGETS lime DESTINATION bin)
 
 message("-- Main targets done")
