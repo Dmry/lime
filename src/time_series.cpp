@@ -1,3 +1,16 @@
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Datatypes for storing time series
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #include "time_series.hpp"
 
 #include <algorithm>

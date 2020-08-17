@@ -1,5 +1,18 @@
 #include "lime_log_utils.hpp"
 
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Setup and utilities for logging
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 Async_except* Async_except::inst = nullptr;
 
 Async_except::Async_except()

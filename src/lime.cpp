@@ -1,3 +1,16 @@
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Command line interface
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #include <boost/log/utility/setup/console.hpp>
 #include <boost/tuple/tuple.hpp>
 #define BOOST_LOG_DYN_LINK 1

@@ -1,6 +1,19 @@
 #include "parse.hpp"
 #include "time_series.hpp"
 
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Read space or comma delimited (like those used at ICS) files into time series
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 struct ics_file_format : file_format<ics_file_format>
 {
     ics_file_format()

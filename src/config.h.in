@@ -1,3 +1,14 @@
 #pragma once
 
+/*
+ *  This file is part of the "Lime" tool, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS) 
+ * 
+ *  Configuration macros
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #define PROJECT_VER "@PROJECT_VERSION@"

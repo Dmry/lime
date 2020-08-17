@@ -1,5 +1,19 @@
 #pragma once
 
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Post processing of model computation results.
+ *  E.g. Mean square errors for fits and derivatives for validation
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #include <boost/version.hpp>
 
 #if BOOST_VERSION >= 107000

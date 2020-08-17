@@ -1,3 +1,16 @@
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Computation of contour length fluctuations
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #include "contour_length_fluctuations.hpp"
 #include "parallel_policy.hpp"
 #include "lime_log_utils.hpp"

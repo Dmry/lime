@@ -1,5 +1,19 @@
 #pragma once
 
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  CUDA implementation for Rubinstein & Colby's method for constraint release
+ *  Doi: 10.1063/1.455620
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #include <vector>
 
 struct Cu_me_details

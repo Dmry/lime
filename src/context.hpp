@@ -1,5 +1,18 @@
 #pragma once
 
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Data types for model parameters
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #include <boost/hana.hpp>
 #include <boost/hana/define_struct.hpp>
 #include <boost/hana/keys.hpp>

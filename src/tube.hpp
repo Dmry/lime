@@ -1,12 +1,15 @@
 #pragma once
 
 /*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
  *
- *  Copyright © 2020 Daniel Emmery (CNRS) 
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
  * 
  *  Datatypes for reptation tube representations.
  * 
- *  GPL 2.0 License
+ *  GPL 3.0 License
  * 
  */
 

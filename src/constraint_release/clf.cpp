@@ -1,8 +1,19 @@
-#include "clf.hpp"
-
 /*
-    Not the most elegant solution as it leads to double computations, but definitely the most ergonmic one
-*/
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Allow contour length fluctuations to be used as an approximation for constraint release.
+ *
+ *  Not the most elegant solution as it leads to double computations, but definitely the most ergonmic one
+ * 
+ *  GPL 3.0 License
+ * 
+ */
+
+#include "clf.hpp"
 
 CLF_constraint_release::CLF_constraint_release(double c_v, Context &ctx)
     : IConstraint_release{c_v}, clf{ctx}

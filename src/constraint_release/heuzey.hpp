@@ -1,9 +1,17 @@
 #pragma once
 
 /*
- *      Theory for Linear Rheology of Monodisperse Linear Polymers
- *      Marie-Claude Heuzey, Paula Wood-Adams, Djamila Sekki
- *      Journal of Applied Polymer Science 2004
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Heuzey's method for constraint release
+ *  Doi: 10.1002/app.20881
+ *
+ *  GPL 3.0 License
+ * 
  */
 
 #include "../time_series.hpp"

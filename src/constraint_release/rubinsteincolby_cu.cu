@@ -1,3 +1,15 @@
+/*
+ *  This file is part of the "Lime" tool, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS) 
+ * 
+ *  CUDA implementation for Rubinstein & Colby's method for constraint release
+ *  Doi: 10.1063/1.455620
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #include <vector>
 #include <memory>
 #include <iostream>

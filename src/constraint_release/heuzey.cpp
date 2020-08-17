@@ -1,3 +1,17 @@
+/*
+ *  This file is part of Lime, a tool for the application of Likhtman & McLiesh' model for polymer dyanmics.
+ *
+ *  Copyright © 2020 Daniel Emmery (CNRS)
+ *
+ *  File contents:
+ * 
+ *  Heuzey's method for constraint release
+ *  Doi: 10.1002/app.20881
+ *
+ *  GPL 3.0 License
+ * 
+ */
+
 #include <boost/math/quadrature/exp_sinh.hpp>
 
 #include "heuzey.hpp"
