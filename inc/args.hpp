@@ -470,6 +470,28 @@ auto lazy_callback(F f)
     };
 }
 
+auto exclude(std::string flag)
+{
+    return [flag](auto &&, auto &ctx, argument &arg) {
+        arg.add_callback([&ctx, flag](const argument& arg)
+        {
+            if (arg.count > 0)
+            {
+                auto found = std::find_if(ctx.arguments.begin(), ctx.arguments.end(),
+                                          [flag](const auto &ctx_arg) -> bool {
+                                                return ctx_arg.count > 0 and std::find(ctx_arg.flags.begin(), ctx_arg.flags.end(), flag) != ctx_arg.flags.end();
+                                          }) != ctx.arguments.end();
+                if (found)
+                {
+                    std::stringstream out;
+                    out << "Flag " << arg.flags[0] << " and " << flag << " are mutually exclusive.";
+                    throw std::runtime_error(out.str());
+                }
+            }
+        });
+    };
+}
+
 template<class F>
 auto action(F f)
 {

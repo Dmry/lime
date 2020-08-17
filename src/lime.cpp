@@ -111,7 +111,8 @@ struct result_cmd
         f(ctx->N_e,          "-n", "--monomersperentanglement",  args::help("Number of monomers per entanglement"),          args::required());
         f(ctx->tau_monomer,  "-m", "--monomerrelaxationtime",    args::help("Initial guess of the monomer relaxation time"), args::required());
         f(c_v,               "-c", "--crparameter",              args::help("Constraint release parameter"),                 args::required());
-        f(CR_impl,           "--rub",                            args::help("Enable Rubinstein&Colby constraint release"),   args::set(constraint_release::impl::RUBINSTEINCOLBY));
+        f(CR_impl,           "--rub",                            args::help("Enable Rubinstein&Colby constraint release"),   args::exclude("--clf"), args::set(constraint_release::impl::RUBINSTEINCOLBY));
+        f(CR_impl,           "--clf",                            args::help("Use contour length fluctuations for constraint release"), args::set(constraint_release::impl::CLF));
     }
 
     template <typename builder_t = ICS_context_builder>
