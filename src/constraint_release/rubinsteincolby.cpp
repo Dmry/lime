@@ -90,7 +90,6 @@ RUB_constraint_release::update(const Context& ctx)
 
     const double E_star = e_star(ctx.Z, ctx.tau_e, ctx.G_f_normed);
 
-    if (realization_size_ != static_cast<size_t>(ctx.Z))
     generate(ctx.G_f_normed, ctx.tau_df, ctx.tau_e, E_star, ctx.Z);
 }
 
@@ -98,12 +97,9 @@ void
 RUB_constraint_release::set_sizing_requirements(size_t Z)
 {
     realization_size_ = Z;
-    realizations_ = (Z > 100 ? Z*2 : 200);
+    realizations_ = (Z > 100 ? Z*4 : 200);
 
-    if (size_t required_size = Z*realizations_; km.size() != required_size)
-    {
-        km.resize(required_size);
-    }
+    km.resize(Z * realizations_);
 }
 
 
