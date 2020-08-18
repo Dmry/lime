@@ -494,10 +494,10 @@ class Handler:
     '''
     Handles signals emitted by widgets that have been comfigured in glade
     '''
-    def __init__(self, window, spinner, decoupler, store, plot_area, treeview, var_store, context_grid):
+    def __init__(self, window, spinner, decouplers, store, plot_area, treeview, var_store, context_grid):
         self.window = window
         self.spinner = spinner
-        self.decoupler = decoupler
+        self.generate_decoupler, self.fit_decoupler = decouplers
         self.store = store
         self.current = store.get_iter_first()
         self.plot_area = plot_area
@@ -553,11 +553,10 @@ class Handler:
         '''
 
         i = tabs.get_current_page()
-        decouple = self.decoupler.get_state()
 
         # Generate
         if i == 0:
-            generator = Generator(self.window, decouple, self.var_store)
+            generator = Generator(self.window, self.generate_decoupler.get_active(), self.var_store)
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 dialog = None
@@ -573,7 +572,7 @@ class Handler:
             
             # Initialize fit object with data points
             timeseries = timeseries_from_store_row(store, iterator)
-            fit = Fit(self.window, decouple, self.var_store, timeseries, lambda: None)
+            fit = Fit(self.window, self.fit_decoupler.get_active(), self.var_store, timeseries, lambda: None)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
                 # Dialog to show while computing
@@ -729,7 +728,8 @@ def main():
     # Collect dependencies for the signal handler
     window = builder.get_object("lime")
     spinner = builder.get_object('spinner')
-    decoupler = builder.get_object("decouplegeSwitchGenerate")
+    generate_decoupler = builder.get_object("decouplegeSwitchGenerate")
+    fit_decoupler = builder.get_object("decouplegeSwitchFit")
     store = builder.get_object("resultStore")
     plot_area = PlotArea(builder.get_object("nLabelGenerate").get_style_context().get_color(Gtk.StateFlags.NORMAL).to_string())
     treeview = builder.get_object('storeView')
@@ -737,7 +737,7 @@ def main():
     context_grid = ContextGrid(builder.get_object('contextGrid'), store)
 
     # Construct and connect signal handler
-    handler = Handler(window, spinner, decoupler, store, plot_area, treeview, varstore, context_grid)
+    handler = Handler(window, spinner, (generate_decoupler, fit_decoupler), store, plot_area, treeview, varstore, context_grid)
     builder.connect_signals(handler)
 
     # Set up the area that will display plots

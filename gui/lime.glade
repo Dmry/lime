@@ -49,7 +49,7 @@
     <property name="text" translatable="yes">1</property>
   </object>
   <object class="GtkEntryBuffer" id="taumonStore">
-    <property name="text" translatable="yes">10</property>
+    <property name="text" translatable="yes">1</property>
   </object>
   <object class="GtkWindow" id="lime">
     <property name="can_focus">False</property>

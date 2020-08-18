@@ -40,26 +40,33 @@ std::vector<double> extract_time_from_result(const ICS_result& result)
     return *result.get_time_range();
 }
 
-void fit(bool decouple, ICS_result &result, const std::vector<double> &input, double weighting, std::function<void()>& python_callback)
+template<typename... T>
+auto get_cb()
 {
     auto cb =
         [](const size_t iter, void *userdata, const gsl_multifit_nlinear_workspace *w) {
-            Fit<double, double, double>::default_callback(iter, nullptr, w);
-            auto python_callback = static_cast<std::function<void()>*>(userdata);
+            Fit<T...>::default_callback(iter, nullptr, w);
+            auto python_callback = static_cast<std::function<void()> *>(userdata);
             (*python_callback)();
         };
+
+    return cb;
+}
+
+void fit(bool decouple, ICS_result &result, const std::vector<double> &input, double weighting, std::function<void()>& python_callback)
+{
 
     if (decouple)
     {
         Fit fit_driver(result.context_->N_e, result.context_->tau_monomer, result.context_->G_e);
-        fit_driver.callback_func = cb;
+        fit_driver.callback_func = get_cb<double, double, double>();
         fit_driver.callback_params = static_cast<void*>(&python_callback);
         fit_driver.fit(input, result, weighting);
     }
     else
     {
         Fit fit_driver(result.context_->N_e, result.context_->tau_monomer);
-        fit_driver.callback_func = cb;
+        fit_driver.callback_func = get_cb<double, double>();
         fit_driver.callback_params = static_cast<void *>(&python_callback);
         fit_driver.fit(input, result, weighting);
     }
