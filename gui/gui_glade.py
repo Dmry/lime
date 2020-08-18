@@ -442,12 +442,11 @@ class ContextViewColumn:
         self.display(cv, self.cv)
 
     def convert(self, input):
-        out = str(round(input, 2))
-
         if input >= 10000:
+            out = str(round(input, 4))
             return '%.2E' % Decimal(out)
         else:
-            return str(round(input, 2))
+            return str(round(input, 4))
 
     def display(self, input, out):
         out.set_text(self.convert(input))
