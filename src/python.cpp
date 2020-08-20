@@ -55,7 +55,6 @@ auto get_cb()
 
 void fit(bool decouple, ICS_result &result, const std::vector<double> &input, double weighting, std::function<void()>& python_callback)
 {
-
     if (decouple)
     {
         Fit fit_driver(result.context_->N_e, result.context_->tau_monomer, result.context_->G_e);

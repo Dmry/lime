@@ -97,11 +97,10 @@ void
 RUB_constraint_release::set_sizing_requirements(size_t Z)
 {
     realization_size_ = Z;
-    realizations_ = (Z > 100 ? Z*4 : 200);
+    realizations_ = (Z > 100 ? Z*2 : 200);
 
     km.resize(Z * realizations_);
 }
-
 
 double
 RUB_constraint_release::e_star(double Z, double tau_e, double G_f_normed)

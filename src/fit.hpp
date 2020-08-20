@@ -58,7 +58,7 @@ struct Fit
 	{
 		fdf_params.scale = gsl_multifit_nlinear_scale_more;
 		fdf_params.trs =   gsl_multifit_nlinear_trs_subspace2D;
-		fdf_params.fdtype = GSL_MULTIFIT_NLINEAR_FWDIFF;
+		fdf_params.fdtype = GSL_MULTIFIT_NLINEAR_CTRDIFF;
 		fdf_params.solver = gsl_multifit_nlinear_solver_svd;
 		fdf_params.factor_up = 3;
 		fdf_params.factor_down = 2;
@@ -67,25 +67,22 @@ struct Fit
  	static void
 	default_callback(const size_t iter, void *, const gsl_multifit_nlinear_workspace *w)
 	{
-		if (iter == 1 or iter % 5 == 0)
+		gsl_vector *f = gsl_multifit_nlinear_residual(w);
+		gsl_vector *x = gsl_multifit_nlinear_position(w);
+
+		std::stringstream out;
+
+		out << "iter " << iter;
+		
+		for (size_t i = 0 ; i < sizeof...(T) ; ++i)
 		{
-			gsl_vector *f = gsl_multifit_nlinear_residual(w);
-			gsl_vector *x = gsl_multifit_nlinear_position(w);
-
-			std::stringstream out;
-
-			out << "iter " << iter;
-			
-			for (size_t i = 0 ; i < sizeof...(T) ; ++i)
-			{
-				out << ", " << i << ": ";
-        		out << gsl_vector_get(x, i);
-      		}
-			
-			out << ", |f(x)| = " << gsl_blas_dnrm2(f);
-
-			BOOST_LOG_TRIVIAL(info) << out.str();
+			out << ", " << i << ": ";
+			out << gsl_vector_get(x, i);
 		}
+		
+		out << ", |f(x)| = " << gsl_blas_dnrm2(f);
+
+		BOOST_LOG_TRIVIAL(info) << out.str();
 	}
 
 	static
