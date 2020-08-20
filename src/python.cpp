@@ -25,7 +25,7 @@
 #include "constraint_release/constraint_release.hpp"
 #include "constraint_release/rubinsteincolby.hpp"
 #include "constraint_release/heuzey.hpp"
-#include "constraint_release/clf.hpp"
+#include "constraint_release/doublereptation.hpp"
 
 // A few wrappers to make things easier:
 
@@ -122,7 +122,7 @@ PYBIND11_MODULE(lime_python, m)
         .def("get_context_view", &ICS_decoupled_context_builder::context_view);
 
     pybind11::enum_<constraint_release::impl>(m, "cr_impl")
-        .value("CLF", constraint_release::impl::CLF)
+        .value("Doublereptation", constraint_release::impl::DOUBLEREPTATION)
         .value("Heuzey", constraint_release::impl::HEUZEY)
         .value("Rubinsteincolby", constraint_release::impl::RUBINSTEINCOLBY);
 
@@ -130,14 +130,14 @@ PYBIND11_MODULE(lime_python, m)
         "init_factories",
         []() { Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &> heu_factory(constraint_release::impl::HEUZEY);
                Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context &> rub_factory(constraint_release::impl::RUBINSTEINCOLBY);
-               Register_class<IConstraint_release, CLF_constraint_release, constraint_release::impl, double, Context&> clf_factory(constraint_release::impl::CLF);
+               Register_class<IConstraint_release, DR_constraint_release, constraint_release::impl, double, Context&> dr_factory(constraint_release::impl::DOUBLEREPTATION);
         },
         pybind11::return_value_policy::automatic);
 
     m.def("generate_exponential", &generate_exponential_wrapper, pybind11::return_value_policy::copy);
 
     pybind11::class_<ICS_result>(m, "ICS_result")
-        .def(pybind11::init([](const Time_range::base& time, ICS_context_builder *builder, constraint_release::impl impl) {
+        .def(pybind11::init([](const Time_range::base &time, ICS_context_builder *builder, constraint_release::impl impl) {
             return ICS_result(std::make_shared<Time_range::base>(time), builder, impl);
         }))
         .def("calculate", &ICS_result::calculate)

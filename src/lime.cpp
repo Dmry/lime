@@ -23,7 +23,7 @@
 #include "contour_length_fluctuations.hpp"
 #include "constraint_release/heuzey.hpp"
 #include "constraint_release/rubinsteincolby.hpp"
-#include "constraint_release/clf.hpp"
+#include "constraint_release/doublereptation.hpp"
 #include "lime_log_utils.hpp"
 #include "result.hpp"
 #include "parallel_policy.hpp"
@@ -43,7 +43,7 @@
 
 static Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context&> rubinstein_constraint_release_factory(constraint_release::impl::RUBINSTEINCOLBY);
 static Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context&> heuzey_constraint_release_factory(constraint_release::impl::HEUZEY);
-static Register_class<IConstraint_release, CLF_constraint_release, constraint_release::impl, double, Context&> clf_constraint_release_factory(constraint_release::impl::CLF);
+static Register_class<IConstraint_release, DR_constraint_release, constraint_release::impl, double, Context&> dr_constraint_release_factory(constraint_release::impl::DOUBLEREPTATION);
 
 struct lime : args::group<lime>
 {
@@ -111,8 +111,8 @@ struct result_cmd
         f(ctx->N_e,          "-n", "--monomersperentanglement",  args::help("Number of monomers per entanglement"),          args::required());
         f(ctx->tau_monomer,  "-m", "--monomerrelaxationtime",    args::help("Initial guess of the monomer relaxation time"), args::required());
         f(c_v,               "-c", "--crparameter",              args::help("Constraint release parameter"),                 args::required());
-        f(CR_impl,           "--rub",                            args::help("Use Rubinstein&Colby constraint release (mutually exclusive with --clf)"),   args::exclude("--clf"), args::set(constraint_release::impl::RUBINSTEINCOLBY));
-        f(CR_impl,           "--clf",                            args::help("Use contour length fluctuations for constraint release"), args::set(constraint_release::impl::CLF));
+        f(CR_impl, "--rub", args::help("Use Rubinstein&Colby constraint release (mutually exclusive with --doublerep)"), args::exclude("--doublerep"), args::set(constraint_release::impl::RUBINSTEINCOLBY));
+        f(CR_impl, "--doublerep", args::help("Use double reptation for constraint release"), args::set(constraint_release::impl::DOUBLEREPTATION));
     }
 
     template <typename builder_t = ICS_context_builder>

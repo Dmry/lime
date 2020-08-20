@@ -17,10 +17,10 @@
 #include "../contour_length_fluctuations.hpp"
 #include "../context.hpp"
 
-struct CLF_constraint_release : public IConstraint_release
+struct DR_constraint_release : public IConstraint_release
 {
-    CLF_constraint_release(double c_v, Context &ctx);
-    virtual ~CLF_constraint_release() = default;
+    DR_constraint_release(double c_v, Context &ctx);
+    virtual ~DR_constraint_release() = default;
 
     Time_series operator()(const Time_series::time_type &) const override;
     Time_series::value_primitive operator()(const Time_series::time_primitive &) const override;

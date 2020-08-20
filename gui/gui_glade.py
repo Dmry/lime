@@ -287,7 +287,7 @@ class VarStore:
         self.impl_dict = {
             "Rubinstein" : lime_python.cr_impl.Rubinsteincolby,
             "Heuzey" : lime_python.cr_impl.Heuzey,
-            "CLF" : lime_python.cr_impl.CLF
+            "Double reptation" : lime_python.cr_impl.Doublereptation
         }
 
     def to_number(self, var):

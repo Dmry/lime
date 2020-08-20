@@ -409,7 +409,7 @@
                         <items>
                           <item translatable="yes">Heuzey</item>
                           <item translatable="yes">Rubinstein</item>
-                          <item translatable="yes">CLF</item>
+                          <item translatable="yes">Double reptation</item>
                         </items>
                       </object>
                       <packing>
@@ -462,7 +462,7 @@
                         <items>
                           <item translatable="yes">Heuzey</item>
                           <item translatable="yes">Rubinstein</item>
-                          <item translatable="yes">CLF</item>
+                          <item translatable="yes">Double reptation</item>
                         </items>
                       </object>
                       <packing>
