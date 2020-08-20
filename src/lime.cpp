@@ -264,7 +264,7 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
     double wt_pow;
     bool decouple;
 
-    fit() : wt_pow{1.2}, decouple{false}
+    fit() : wt_pow{0.0}, decouple{false}
     {}
     
     static const char* help()
