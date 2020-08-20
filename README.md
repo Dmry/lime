@@ -22,7 +22,7 @@ Currently only compiles on linux. Windows users should use the Docker version.
 ## Installing from .rpm (Fedora)
 Download the release from this page and run
 ```
-sudo yum install Lime-1.0.0-1.x86_64.rpm
+sudo yum install Lime-1.0.0-2.x86_64.rpm
 ```
 
 ## Compiling from source
