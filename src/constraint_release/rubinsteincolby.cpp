@@ -157,7 +157,7 @@ RUB_constraint_release::Me(double epsilon) const
 double
 RUB_constraint_release::Me(double&& epsilon) const
 {
-    size_t sum{0};
+    size_t number_of_negative_values{0};
     double s{0};
 
     for (size_t j = 0 ; j < realizations_ ; ++j)
@@ -165,16 +165,18 @@ RUB_constraint_release::Me(double&& epsilon) const
         const size_t stride = j * realization_size_;
 
         s = km[0+stride] + km[1+stride] - epsilon;
-        if (s < 0.0) ++sum;
+        if (s < 0.0)
+            ++number_of_negative_values;
 
-        for (size_t i = 1+stride; i < stride+realization_size_-1 ; ++i)
+        for (size_t i = 1+stride; i < stride+realization_size_ ; ++i)
         {
             s = km[i] + km[i+1] - epsilon - square(km[i])/s;
-            if (s < 0.0) ++sum;
+            if (s < 0.0)
+                ++number_of_negative_values;
         }
     }
 
-    return static_cast<double>(sum) / static_cast<double>(km.size());
+    return static_cast<double>(number_of_negative_values) / static_cast<double>(km.size());
 }
 #endif
 
