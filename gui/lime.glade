@@ -230,6 +230,7 @@
                         <property name="halign">start</property>
                         <property name="valign">center</property>
                         <property name="active">True</property>
+                        <signal name="state-set" handler="on_decouplegeSwitchGenerate_state_set" swapped="no"/>
                         <signal name="state-set" handler="on_decouplegeSwitch_activate" object="geEntryGenerate" swapped="no"/>
                       </object>
                       <packing>
@@ -758,6 +759,7 @@
                         <property name="halign">start</property>
                         <property name="valign">center</property>
                         <property name="active">True</property>
+                        <signal name="state-set" handler="on_decouplegeSwitchFit_state_set" swapped="no"/>
                         <signal name="state-set" handler="on_decouplegeSwitch_activate" object="geEntryFit" swapped="no"/>
                       </object>
                       <packing>
@@ -1204,7 +1206,7 @@
     <property name="version">1.0.0</property>
     <property name="copyright" translatable="yes">Copyright (C) 2020
 Daniël Emmery</property>
-    <property name="comments" translatable="yes">Tool for the application of Likhtman &amp; McLeish' reptation theory</property>
+    <property name="comments" translatable="yes">Tool for the application of Likhtman &amp; McLeish' polymer tube theory</property>
     <property name="website">https://ww.github.com/dmry/lime</property>
     <property name="website_label" translatable="yes">Contribute</property>
     <property name="authors">Daniël Emmery</property>
