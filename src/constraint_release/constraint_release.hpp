@@ -46,5 +46,6 @@ namespace constraint_release
         DOUBLEREPTATION
     };
 
-    typedef Factory_template<IConstraint_release, impl, double, Context&> Factory_with_context;
+    typedef Factory_template<IConstraint_release, impl, double, Context&> Factory_observed;
+    typedef Factory_template<IConstraint_release, impl, double, double, double, double, double> Factory;
 }

@@ -116,7 +116,7 @@ struct result_cmd
     }
 
     template <typename builder_t = ICS_context_builder>
-    ICS_result build_result(Time_series::time_type time)
+    ICS_result build_result(Time_series::time_type time, bool observes_context = true)
     {
         if (c_v <= 0.0)
         {
@@ -125,7 +125,7 @@ struct result_cmd
 
         std::unique_ptr<IContext_builder> builder = std::make_unique<builder_t>(system, ctx);
 
-        ICS_result driver(time, builder.get(), CR_impl);
+        ICS_result driver(time, builder.get(), CR_impl, observes_context);
 
         view = builder->context_view();
 
@@ -292,17 +292,18 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
     void run()
     {
         auto input = get_file_contents();
+        bool observes_context = (CR_impl == constraint_release::impl::RUBINSTEINCOLBY) ? false : true;
 
         if (decouple)
         {
-            auto result = build_result<ICS_decoupled_context_builder>(input.get_time_range());
+            auto result = build_result<ICS_decoupled_context_builder>(input.get_time_range(), observes_context);
             Fit fit_driver(result.context_->N_e, result.context_->tau_monomer, result.context_->G_e);
             fit_driver.fit(input.get_values(), result, wt_pow);
             write_output(result);
         }
         else
         {
-            auto result = build_result<ICS_context_builder>(input.get_time_range());
+            auto result = build_result<ICS_context_builder>(input.get_time_range(), observes_context);
             Fit fit_driver(result.context_->N_e, result.context_->tau_monomer);
             fit_driver.fit(input.get_values(), result, wt_pow);
             write_output(result);

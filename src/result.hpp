@@ -30,7 +30,7 @@ class IResult : public Time_series
 
 struct ICS_result : public IResult
 {
-    ICS_result(Time_series::time_type time_range, IContext_builder* builder, constraint_release::impl impl = constraint_release::impl::HEUZEY);
+    ICS_result(Time_series::time_type time_range, IContext_builder* builder, constraint_release::impl impl, bool cr_observes_context = true);
 
     void calculate() override;
 

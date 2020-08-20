@@ -57,7 +57,7 @@ struct Reproduction_context {
 	{
 		Time_series input = File_reader::get_file_contents(path, 1);
 
-        auto CR = constraint_release::Factory_with_context::create(impl, 1.0, *ctx);
+        auto CR = constraint_release::Factory_observed::create(impl, 1.0, *ctx);
 
         auto wrapper = [&CR](const Time_series::value_primitive& t) {return (*CR)(t);};
 
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(
     for (auto impl : impls)
     {
         BOOST_TEST_INFO(impl);
-        auto CR = constraint_release::Factory_with_context::create(impl, 0.1, ctx);
+        auto CR = constraint_release::Factory_observed::create(impl, 0.1, ctx);
         BOOST_CHECK( CR );
     }
 }

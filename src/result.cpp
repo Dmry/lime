@@ -25,7 +25,7 @@ IResult::IResult(Time_series::time_type time_range)
 :   Time_series{time_range}
 {}
 
-ICS_result::ICS_result(Time_series::time_type time_range, IContext_builder* builder, constraint_release::impl impl)
+ICS_result::ICS_result(Time_series::time_type time_range, IContext_builder* builder, constraint_release::impl impl, bool cr_observes_context)
 :   IResult(time_range)
 {
     // Build context
@@ -34,7 +34,15 @@ ICS_result::ICS_result(Time_series::time_type time_range, IContext_builder* buil
     builder->validate_state();
     context_ = builder->get_context();
 
-    CR = constraint_release::Factory_with_context::create(impl, 0.1, *context_);
+    if (cr_observes_context)
+    {
+        CR = constraint_release::Factory_observed::create(impl, 0.1, *context_);
+    }
+    else
+    {
+        CR = constraint_release::Factory::create(impl, 0.1, context_->Z, context_->tau_e, context_->G_f_normed, context_->tau_df);
+    }
+
     CLF = std::make_unique<Contour_length_fluctuations>(*context_);
 }
 

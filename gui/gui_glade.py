@@ -359,7 +359,7 @@ class Generator:
         self.cv = var_store.to_number("cv")
 
     def generate(self):
-        self.result = lime_python.ICS_result(self.time, self.builder, self.impl)
+        self.result = lime_python.ICS_result(self.time, self.builder, self.impl, True)
         self.result.set_cv(self.cv)
 
         self.result.calculate()
@@ -373,7 +373,7 @@ class Fit:
     Controls fit functions from the lime library.
     '''
 
-    def __init__(self, window, decouple, var_store, input_timeseries, callback):
+    def __init__(self, window, decouple, var_store, input_timeseries):
         lime_python.init_factories()
 
         self.weighting = var_store.to_number("fit_weighting")
@@ -382,14 +382,19 @@ class Fit:
         self.impl = var_store.get_impl("fit")
         self.builder = Builder(window, decouple, var_store).get()
         self.cv = var_store.to_number("cv")
-        self.callback = callback
 
     def fit(self, dialog = None):
-        self.result = lime_python.ICS_result(self.input_timeseries.time, self.builder, self.impl)
+        observes_context = True
+
+        if self.impl == lime_python.cr_impl.Rubinsteincolby:
+            observes_context = False
+        
+        self.result = lime_python.ICS_result(self.input_timeseries.time, self.builder, self.impl, observes_context)
         self.result.set_cv(self.cv)
+        callback = lambda : self.result.update_callback()
 
         try:
-            lime_python.fit(self.decouple, self.result, self.input_timeseries.data, self.weighting, self.callback)
+            lime_python.fit(self.decouple, self.result, self.input_timeseries.data, self.weighting, callback)
         except Exception as ex:
             raise ex
         finally:
@@ -571,7 +576,7 @@ class Handler:
             
             # Initialize fit object with data points
             timeseries = timeseries_from_store_row(store, iterator)
-            fit = Fit(self.window, self.fit_decoupler.get_active(), self.var_store, timeseries, lambda: None)
+            fit = Fit(self.window, self.fit_decoupler.get_active(), self.var_store, timeseries)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
                 # Dialog to show while computing
@@ -610,6 +615,12 @@ class Handler:
             error_dialog.destroy()
         finally:
             GLib.idle_add(self.spinner.stop)
+
+    def on_decouplegeSwitchGenerate_state_set(self, switch, state):
+        self.fit_decoupler.set_state(state)
+
+    def on_decouplegeSwitchFit_state_set(self, switch, state):
+        self.generate_decoupler.set_state(state)
 
     def on_decouplegeSwitch_activate(self, entry, state):
         '''

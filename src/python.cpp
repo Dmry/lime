@@ -130,18 +130,21 @@ PYBIND11_MODULE(lime_python, m)
         []() { Register_class<IConstraint_release, HEU_constraint_release, constraint_release::impl, double, Context &> heu_factory(constraint_release::impl::HEUZEY);
                Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, Context &> rub_factory(constraint_release::impl::RUBINSTEINCOLBY);
                Register_class<IConstraint_release, DR_constraint_release, constraint_release::impl, double, Context&> dr_factory(constraint_release::impl::DOUBLEREPTATION);
+
+               Register_class<IConstraint_release, RUB_constraint_release, constraint_release::impl, double, double, double, double, double> rub_detached_factory(constraint_release::impl::RUBINSTEINCOLBY);
         },
         pybind11::return_value_policy::automatic);
 
     m.def("generate_exponential", &generate_exponential_wrapper, pybind11::return_value_policy::copy);
 
     pybind11::class_<ICS_result>(m, "ICS_result")
-        .def(pybind11::init([](const Time_range::base &time, ICS_context_builder *builder, constraint_release::impl impl) {
-            return ICS_result(std::make_shared<Time_range::base>(time), builder, impl);
+        .def(pybind11::init([](const Time_range::base &time, ICS_context_builder *builder, constraint_release::impl impl, bool observes_context) {
+            return ICS_result(std::make_shared<Time_range::base>(time), builder, impl, observes_context);
         }))
         .def("calculate", &ICS_result::calculate)
         .def("get_values", &ICS_result::get_values)
-        .def("set_cv", [](const ICS_result& res, double cv) {res.CR->c_v_ = cv;});
+        .def("set_cv", [](const ICS_result &res, double cv) { res.CR->c_v_ = cv; })
+        .def("update_callback", [](const ICS_result &res) { res.CR->update(*res.context_); });
 
     m.def("fit", &fit);
 
