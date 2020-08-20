@@ -5,7 +5,7 @@
  *
  *  File contents:
  * 
- *  Datatypes for reptation tube representations.
+ *  Datatypes for tube representations.
  * 
  *  GPL 3.0 License
  * 
