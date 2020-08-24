@@ -21,7 +21,7 @@
 struct Rouse_motion : private Summation<double, double>
 {
     Rouse_motion(double Z, double tau_r, double N)
-        : Summation<double, double>(1.0, Z - 1.0, 1.0,
+        : Summation<double, double>(Z, N, 1.0,
                                     [this](const double &p, const double &t) {
                                         return std::exp(-2.0 * square(p) * t / tau_r_);
                                     }),
