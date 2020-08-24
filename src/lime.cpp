@@ -466,10 +466,12 @@ struct dynamicmod : lime::command<dynamicmod>, cmd_writes_output_file, cmd_takes
             Omega.push_back(omega);
         }
 
-        Vector_writer<dat> writer("out_dynamicmod_gp.out");
+        auto original_filename = inpath.filename().string();
+
+        Vector_writer<dat> writer("gp_" + original_filename);
         writer.write(Omega, Gp);
         
-        writer.path = std::filesystem::path("out_dynamicmod_gpp.out");
+        writer.path = std::filesystem::path("gpp_" + original_filename);
         writer.write(Omega, Gpp);
     } 
 };
