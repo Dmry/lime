@@ -269,11 +269,18 @@ struct Get
 
         for (auto row_ : in)
         {
-            if constexpr(std::is_same<float, typename std::remove_cv<T>::type>::value or std::is_same<double, typename std::remove_cv<T>::type>::value)
+            if constexpr (std::is_same<float, typename std::remove_cv<T>::type>::value or std::is_same<double, typename std::remove_cv<T>::type>::value)
             {
                 try
                 {
-                    out.emplace_back(std::atof(row_.at(idx).data()));
+                    auto view = row_.at(idx).data();
+
+                    size_t read = 0;
+                    T res = std::stod(view, &read);
+                    if (row_.at(idx).size() != read)
+                        break;
+
+                    out.emplace_back(res);
                 }
                 catch (...)
                 {
