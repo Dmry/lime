@@ -88,8 +88,27 @@ std::vector<Time_series::value_primitive> Time_series::operator()()
 Time_series& Time_series::operator=(const Time_series& other_time_series) noexcept
 {
     values_ = other_time_series.values_;
-    time_range_=other_time_series.time_range_;
+    time_range_ = other_time_series.time_range_;
     return *this;
+}
+
+Time_series Time_series::operator*(double constant)
+{
+    Time_series output(*this);
+
+    std::transform(exec_policy, output.begin(), output.end(), output.begin(), std::bind(std::multiplies<double>(), std::placeholders::_1, constant));
+
+    return output;
+}
+
+Time_series Time_series::operator*(const Time_series& other_time_series)
+{
+    return binary_op_new_series(other_time_series, std::multiplies());
+}
+
+Time_series Time_series::operator+(const Time_series &other_time_series)
+{
+    return binary_op_new_series(other_time_series, std::plus());
 }
 
 std::vector<Time_series::value_primitive>::iterator Time_series::begin()

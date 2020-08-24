@@ -70,6 +70,9 @@ struct Time_series
 
     std::vector<value_primitive> operator()();
     Time_series& operator=(const Time_series& other_time_series) noexcept;
+    Time_series operator+(const Time_series& other_time_series);
+    Time_series operator*(const Time_series& other_time_series);
+    Time_series operator*(double);
 
     std::vector<value_primitive>::iterator begin();
     std::vector<value_primitive>::iterator end();
@@ -83,6 +86,32 @@ struct Time_series
 
     Time_series::time_type get_time_range() const;
     Time_series::value_type get_values() const;
+
+    template <typename binary_op>
+    Time_series binary_op_new_series(const Time_series &other_time_series, const binary_op &op)
+    {
+        Time_series output(*this);
+
+        std::transform(exec_policy, output.time_zipped_begin(), output.time_zipped_end(), other_time_series.time_zipped_begin(), output.begin(),
+            [&op](auto output, auto other) mutable -> double {
+                const double &output_time = boost::get<0>(output);
+                const double &output_value = boost::get<1>(output);
+                const double &other_time = boost::get<0>(other);
+                const double &other_value = boost::get<1>(other);
+
+                if (output_time == other_time)
+                {
+                    return op(output_value, other_value);
+                }
+                else
+                {
+                    throw std::runtime_error("Tried to add two incompatible time series");
+                }
+            }
+        );
+
+        return output;
+    };
 
     protected:
         Time_series::time_type time_range_;
