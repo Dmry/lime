@@ -12,8 +12,6 @@
  */
 
 #include "result.hpp"
-#include "longitudinal_motion.hpp"
-#include "rouse_motion.hpp"
 #include "contour_length_fluctuations.hpp"
 #include "utilities.hpp"
 #include "parallel_policy.hpp"
@@ -54,16 +52,29 @@ ICS_result::calculate()
         throw std::runtime_error("No context for ICS result!");
     }
 
-    Longitudinal_motion LM{context_->Z, context_->tau_r};
-    Rouse_motion RM{context_->Z, context_->tau_r, context_->N};
+    Longitudinal_motion LM = get_longitudinal_motion();
+    Rouse_motion RM = get_rouse_motion();
 
-    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(),
-        [this, &LM, &RM](const double& t){ return context_->G_e* (4.0/5.0 * (*CR)(t) * (*CLF)(t) + LM(t) + RM(t) );}
+    std::transform(std::execution::seq, time_range_->begin(), time_range_->end(), values_.begin(),
+        [this, &LM, &RM](const double& t){ 
+        return context_->G_e* (4.0/5.0 * (*CR)(t) * (*CLF)(t) + LM(t) + RM(t) );}
     );
 }
 
-Derivative_result::Derivative_result(Time_series::time_type time_range, IContext_builder* builder, const Time_functor& func)
-: IResult{time_range}, function_{func}
+Rouse_motion
+ICS_result::get_rouse_motion() const
+{
+    return Rouse_motion{context_->Z, context_->tau_r, context_->N};
+}
+
+Longitudinal_motion
+ICS_result::get_longitudinal_motion() const
+{
+    return Longitudinal_motion{context_->Z, context_->tau_r};
+}
+
+Derivative_result::Derivative_result(Time_series::time_type time_range, IContext_builder *builder, const Time_functor &func)
+    : IResult{time_range}, function_{func}
 {
     builder->gather_physics();
     builder->initialize();
