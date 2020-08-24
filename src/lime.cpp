@@ -49,7 +49,7 @@ struct lime : args::group<lime>
 {
     static constexpr const char* help()
     {
-        return "Tool for the analysis of polymer thin films.\nAuthor: Daniel Emmery";
+        return "Tool for application of Likhtman & McLeish' polymer tube model.\nAuthor: Daniel Emmery";
     }
 
     template<class F>
@@ -273,8 +273,9 @@ struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
     bool rmse;
     bool nrrmse;
     bool narmse;
+    bool decouple;
 
-    compare() : rmse{false}, nrrmse{false}, narmse{false}
+    compare() : rmse{false}, nrrmse{false}, narmse{false}, decouple{false}
     {}
 
     static constexpr const char* help()
@@ -287,17 +288,25 @@ struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
     {
         cmd_takes_file_input::parse(f);
         result_cmd::parse(f);
-        f(rmse,     "--rmse",                               args::help("Calculate RMSE between two G(t) curves"),          args::set(true));
+        f(rmse,     "--rmse",                               args::help("Calculate RMSE between two G(t) curves"),                               args::set(true));
         f(narmse,    "--narmse",                            args::help("Calculate RMSE normalized by average between two G(t) curves"),         args::set(true));
         f(nrrmse,    "--nrrmse",                            args::help("Calculate RMSE normalized by range between two G(t) curves"),           args::set(true));
+        f(decouple, "--decouple",                           args::help("Decouple G_e and M_e"),                                                 args::set(true));
+        f(ctx->G_e, "-g", "--entanglementmodulus", args::help("Set initial guess for entanglement modulus, only used when decouple=true"));
     }
 
     void run()
     {
         auto input = get_file_contents();
 
-        ICS_result result = build_result(input.get_time_range());
+        std::function<ICS_result(Time_series::time_type)> build;
 
+        if (decouple)
+            build = [this](Time_series::time_type time) { return build_result<ICS_decoupled_context_builder>(time , true); };
+        else
+            build = [this](Time_series::time_type time) { return build_result<ICS_context_builder>(time, true); };
+
+        auto result = build(input.get_time_range());
         result.calculate();
 
         if (rmse)
