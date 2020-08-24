@@ -35,7 +35,7 @@ struct is_one_of {
         constexpr static
         bool compare(char)
         {
-                return false;
+            return false;
         }
 
         template<class ...other_char_list>
@@ -43,7 +43,7 @@ struct is_one_of {
         bool
         compare(char c, char this_one, other_char_list...others)
         {
-                return c == this_one or compare(c, others...);
+            return c == this_one or compare(c, others...);
         }
 
     public:
@@ -51,7 +51,7 @@ struct is_one_of {
         bool
         check(char c)
         {
-                return compare(c, char_list...);
+            return compare(c, char_list...);
         }
 };
 
