@@ -111,7 +111,8 @@ double
 Contour_length_fluctuations::integral_result(double lower_bound, double t)
 {
     auto f = [t] (double epsilon) -> double {
-        return std::exp(-epsilon*t) / std::pow(epsilon, 5.0/4.0);
+        auto res = -epsilon*t - std::log(std::pow(epsilon, 5.0/4.0));
+        return std::exp(res);
     };
 
     double res{0.0};
