@@ -55,7 +55,7 @@ ICS_result::calculate()
     Longitudinal_motion LM = get_longitudinal_motion();
     Rouse_motion RM = get_rouse_motion();
 
-    std::transform(std::execution::seq, time_range_->begin(), time_range_->end(), values_.begin(),
+    std::transform(exec_policy, time_range_->begin(), time_range_->end(), values_.begin(),
         [this, &LM, &RM](const double& t){ 
         return context_->G_e* (4.0/5.0 * (*CR)(t) * (*CLF)(t) + LM(t) + RM(t) );}
     );
