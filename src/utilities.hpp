@@ -89,10 +89,8 @@ struct Summation
     T operator() (const user_data_t&... dat) const
     {
         T sum {0};
-        T p {start};
 
-        // Should really implement a comparison suitable for floating point numbers
-        for(; p <= end; p += step)
+        for (T p {start}; p <= end; p += step)
             sum += func_(p, dat...);
 
         return sum;
