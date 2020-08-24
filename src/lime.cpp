@@ -427,6 +427,53 @@ struct reproduce : lime::command<reproduce>, cmd_writes_output_file, cmd_takes_f
     }
 };
 
+struct dynamicmod : lime::command<dynamicmod>, cmd_writes_output_file, cmd_takes_file_input
+{
+    dynamicmod()
+    {}
+
+    static const char *help()
+    {
+        return "Compute the storage and loss modulo G' and G'' of a given G(t) input file.";
+    }
+
+    template<class F>
+    void parse(F f)
+    {
+        cmd_takes_file_input::parse(f);
+        cmd_writes_output_file::parse(f);
+    }
+
+    void run()
+    {
+        auto input = get_file_contents();
+        
+        auto values = input.get_values();
+        auto time = input.get_time_range();
+
+        Schwarzl dynamic_modulus(values, *time);
+
+        std::vector<double> Gp;
+        std::vector<double> Gpp;
+        std::vector<double> Omega;
+
+        for(auto& t : *time)
+        {
+            auto [omega, gp, gpp] = dynamic_modulus(t);
+
+            Gp.push_back(gp);
+            Gpp.push_back(gpp);
+            Omega.push_back(omega);
+        }
+
+        Vector_writer<dat> writer("out_dynamicmod_gp.out");
+        writer.write(Omega, Gp);
+        
+        writer.path = std::filesystem::path("out_dynamicmod_gpp.out");
+        writer.write(Omega, Gpp);
+    } 
+};
+
 void ics_terminate() {
     BOOST_LOG_TRIVIAL(error) << "Unhandled exception";
     std::rethrow_exception(std::current_exception());

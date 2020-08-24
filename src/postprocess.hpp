@@ -22,10 +22,15 @@
     #include <boost/math/tools/numerical_differentiation.hpp>
 #endif
 
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_spline.h>
+
 #include "time_series.hpp"
 #include "parallel_policy.hpp"
 
 #include <vector>
+#include <array>
+#include <tuple>
 #include <functional>
 #include <numeric>
 #include <cmath>
@@ -101,3 +106,77 @@ Time_series dimensionless_derivative(const Functor_t& func, const Time_series::t
 
     return derivative_result;
 }
+
+struct Schwarzl
+{
+    std::array<double, 10> interp;
+
+    gsl_interp_accel *acc;
+    gsl_spline *spline;
+
+    std::vector<double> g_t_;
+    std::vector<double> t_;
+
+    Schwarzl(const std::vector<double>& g_t, const std::vector<double>& t)
+    : g_t_{g_t}, t_{t}
+    {
+        acc = gsl_interp_accel_alloc();
+        spline = gsl_spline_alloc (gsl_interp_cspline, g_t_.size());
+        gsl_spline_init (spline, t_.data(), g_t_.data(), g_t_.size());
+    }
+
+    std::tuple<double, double, double>
+    operator()(double t)
+    {
+        double current_t = t / 64.0;
+
+        for (auto& val : interp)
+        {
+            if (current_t <= t_.front())
+                val = g_t_.front();
+            else if (current_t >= t_.back())
+                val = g_t_.back();
+            else
+                val = gsl_spline_eval (spline, current_t, acc);
+
+            current_t *= 2.0;
+        }
+
+        return {get_omega(t), Gp(), Gpp()};
+    }
+
+    double
+    get_omega(double t)
+    {
+        return 1.0/t;
+    }
+
+    double
+    Gp()
+    {
+        return
+            interp[6]
+            + 0.000451 * (interp[0] - interp[1])
+            + 0.00716 * (interp[2] - interp[3])
+            + 0.0010 * (interp[3] - interp[4])
+            + 0.103 * (interp[4] - interp[5])
+            + 0.099 * (interp[5] - interp[6])
+            + 0.046 * (interp[6] - interp[7])
+            + 0.717 * (interp[7] - interp[8])
+            - 0.142 * (interp[8] - interp[9]);
+    }
+
+    double
+    Gpp()
+    {
+        return
+            0.03125 * 2.12 * (interp[0] - interp[1])
+            + 0.0181 * (interp[1] - interp[2])
+            + 0.0668 * (interp[2] - interp[3])
+            + 0.191 * (interp[3] - interp[4])
+            + 0.397 * (interp[4] - interp[5])
+            + 0.412 * (interp[5] - interp[6])
+            + 1.547 * (interp[6] - interp[7])
+            - 0.441 * (interp[7] - interp[8]);
+    }
+};
