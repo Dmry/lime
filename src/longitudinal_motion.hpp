@@ -14,6 +14,8 @@
  */
 
 #include "utilities.hpp"
+#include "time_series.hpp"
+#include "parallel_policy.hpp"
 
 struct Longitudinal_motion : private Summation<double, double>
 {
@@ -30,6 +32,15 @@ struct Longitudinal_motion : private Summation<double, double>
         end = Z_-1.0;
         auto sum = Summation<double, double>::operator()(t);
         return sum / (5.0 * Z_);
+    }
+
+    Time_series operator()(const Time_series::time_type &time_range) const
+    {
+        Time_series res{time_range};
+
+        std::transform(exec_policy, time_range->begin(), time_range->end(), res.begin(), *this);
+
+        return res;
     }
 
     double Z_;

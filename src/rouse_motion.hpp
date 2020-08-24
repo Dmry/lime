@@ -15,6 +15,8 @@
 
 #include "context.hpp"
 #include "utilities.hpp"
+#include "time_series.hpp"
+#include "parallel_policy.hpp"
 
 struct Rouse_motion : private Summation<double, double>
 {
@@ -32,6 +34,15 @@ struct Rouse_motion : private Summation<double, double>
         end = N_;
         auto sum = Summation<double, double>::operator()(t);
         return sum / Z_;
+    }
+
+    Time_series operator()(const Time_series::time_type &time_range) const
+    {
+        Time_series res{time_range};
+
+        std::transform(exec_policy, time_range->begin(), time_range->end(), res.begin(), *this);
+
+        return res;
     }
 
     double Z_;
