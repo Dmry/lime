@@ -87,6 +87,59 @@ struct cmd_writes_output_file
     }
 };
 
+struct cmd_can_output_terms
+{
+    bool term_one;
+    bool term_two;
+    bool term_three;
+    Writer &writer_ref;
+
+    cmd_can_output_terms(Writer &writer)
+        : term_one{false},
+          term_two{false},
+          term_three{false},
+          writer_ref{writer}
+    {}
+
+    template <class F>
+    void parse(F f)
+    {
+        f(term_one, "--escapeterm", args::help("Output the escape from tube-term of the Likhtman&McLeish model"), args::set(true));
+        f(term_two, "--longitudinalterm", args::help("Output the longitudinal motion-term of the Likhtman&McLeish model"), args::set(true));
+        f(term_three, "--rouseterm", args::help("Output rouse motion inside the tube-term Likhtman&McLeish model (Longitudinal motion)"), args::set(true));
+    }
+
+    void output_terms(const ICS_result& res)
+    {
+        auto original_filename = writer_ref.get_path().filename().string();
+
+        const auto& time = res.get_time_range();
+
+        if (term_one)
+        {
+            writer_ref.set_filename("escape_term_" + original_filename);
+
+            writer_ref << (*res.CR)(time) * (*res.CLF)(time) * (4.0 / 5.0);
+        }
+
+        if (term_two)
+        {
+            writer_ref.set_filename("longitudinal_term_" + original_filename);
+
+            writer_ref << (res.get_longitudinal_motion())(time);
+        }
+
+        if (term_three)
+        {
+            writer_ref.set_filename("rouse_term_" + original_filename);
+
+            writer_ref << (res.get_rouse_motion())(time);
+        }
+
+        writer_ref.set_filename(original_filename);
+    }
+};
+
 struct result_cmd
 {
     std::shared_ptr<Context> ctx;
@@ -179,9 +232,9 @@ struct cmd_takes_file_input
     }
 };
 
-struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd, cmd_generates_exponential_timescale
+struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd, cmd_generates_exponential_timescale, cmd_can_output_terms
 {
-    generate()
+    generate() : cmd_can_output_terms(cmd_writes_output_file::writer)
     {}
 
     static constexpr const char* help()
@@ -195,6 +248,7 @@ struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd, c
         cmd_generates_exponential_timescale::parse(f);
         result_cmd::parse(f);
         cmd_writes_output_file::parse(f);
+        cmd_can_output_terms::parse(f);
     }
 
     void run()
@@ -209,6 +263,8 @@ struct generate : lime::command<generate>, cmd_writes_output_file, result_cmd, c
         result.calculate();
 
         writer << *view << result;
+
+        output_terms(result);
     }
 };
 
@@ -259,12 +315,12 @@ struct compare : lime::command<compare>, cmd_takes_file_input, result_cmd
     }
 };
 
-struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, result_cmd
+struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, result_cmd, cmd_can_output_terms
 {
     double wt_pow;
     bool decouple;
 
-    fit() : wt_pow{0.0}, decouple{false}
+    fit() : cmd_can_output_terms(cmd_writes_output_file::writer), wt_pow{0.0}, decouple{false}
     {}
     
     static const char* help()
@@ -278,6 +334,7 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
         cmd_takes_file_input::parse(f);
         result_cmd::parse(f);
         cmd_writes_output_file::parse(f);
+        cmd_can_output_terms::parse(f);
         f(wt_pow,   "-w", "--weightpower",         args::help("Set power for the weighting factor 1/(x^wt)") );
         f(decouple, "--decouple",                  args::help("Decouple G_e and M_e"), args::set(true));
         f(ctx->G_e, "-g", "--entanglementmodulus", args::help("Set initial guess for entanglement modulus, only used when decouple=true") );
@@ -287,6 +344,7 @@ struct fit : lime::command<fit>, cmd_takes_file_input, cmd_writes_output_file, r
     {
         BOOST_LOG_TRIVIAL(info) << *view << "cv: " << result.CR->c_v_;
         writer << *view << result;
+        output_terms(result);
     }
 
     void run()
