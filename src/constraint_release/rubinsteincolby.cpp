@@ -97,7 +97,7 @@ void
 RUB_constraint_release::set_sizing_requirements(size_t Z)
 {
     realization_size_ = Z;
-    realizations_ = (Z > 100 ? Z*2 : 200);
+    realizations_ = (Z > 100 ? Z*3 : 600);
 
     km.resize(Z * realizations_);
 }
@@ -168,7 +168,7 @@ RUB_constraint_release::Me(double&& epsilon) const
         if (s < 0.0)
             ++number_of_negative_values;
 
-        for (size_t i = 1+stride; i < stride+realization_size_ ; ++i)
+        for (size_t i = 1+stride; i < stride+realization_size_-1 ; ++i)
         {
             s = km[i] + km[i+1] - epsilon - square(km[i])/s;
             if (s < 0.0)
